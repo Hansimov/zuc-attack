@@ -71,24 +71,66 @@
 
 # ---------------------------------------------------------------------------------------------- %
 
-# import numpy as np
+import numpy as np
 import struct
+import time
+import sys
+from convertType import *
 
 # trsfilename = 'celcom.trs'
 trsfilename = 'zuc_traces.trs'
 
+class TrsTag:
+    def __init__(self, hexstr, val, desc):
+        self.hexstr = hexstr
+        self.val    = val
+        self.desc   = desc
 
 def readValueOfTag(fid):
     lem = hex2dec(fid.read(1).hex())
     hex_str = fid.read(lem).hex()
     return hex_str
 
+def parseSampleCoding(sc_hex):
+    # Sample Coding: (trs_info['sc'] e.g.: '01')
+    #    0000 0001
+    #   <0123 4567>
+    #
+    #   bit 0-2   reserved, set to '000'
+    #   bit 3     integer (0) or floating point (1)
+    #   bit 4-7   Sample length in bytes (valid values are 1, 2, 4)
+
+    sc_type_num = sc_hex[0]
+    sc_size = int(sc_hex[1])
+
+    if   sc_type_num == '0':
+        if   sc_size == 1: # Integer
+            sc_type = 'b' # signed char(int) - 1 byte
+        elif sc_size == 2:
+            sc_type = 'h' # signed short - 2 bytes
+        elif sc_size == 4:
+            sc_type = 'l' # signed long - 4 bytes
+        else:
+            print('Invalid Sample Size!')
+            return
+    elif sc_type_num == '1': # Floating
+        if   sc_size == 4:
+            sc_type = 'f' # float - 4 bytes
+        else:
+            print('Invalid Sample Size!')
+            return
+    else:
+        print('Invalid Sample Type')
+        return
+
+    return sc_type, sc_size
+
 def readHeader(fid):
     trs_info = {}
     trs_info['nt'] = TrsTag('', 0, 'Number of Traces')
     trs_info['ns'] = TrsTag('', 0, 'Number of Samples')
     trs_info['sc'] = TrsTag('', 0, 'Sample Coding')
-    trs_info['st'] = TrsTag('', 'int8', 'Sample Type')
+    trs_info['st'] = TrsTag('', 'b', 'Sample Type')
     trs_info['ss'] = TrsTag('', 1, 'Sample Size (Bytes)')
     trs_info['ds'] = TrsTag('', 0, 'Data Size')
     trs_info['ts'] = TrsTag('', 0, 'Title Space')
@@ -108,18 +150,20 @@ def readHeader(fid):
         hex_str = readValueOfTag(fid)
 
         if tag == '41':
-            val = hex2int(hex_str)
+            val = hex2int32(hex_str)
             trs_info['nt'] = TrsTag(hex_str, val, 'Number of Traces')
         elif tag == '42':
-            val = hex2int(hex_str)
+            val = hex2int32(hex_str)
             trs_info['ns'] = TrsTag(hex_str, val, 'Number of Samples')
         elif tag == '43':
             val = hex_str
             trs_info['sc'] = TrsTag(hex_str, val, 'Sample Coding')
-            # trs_info['st'] = TrsTag(val)
+            sc_type, sc_size = parseSampleCoding(val)
+            trs_info['st'] = TrsTag(hex_str[0], sc_type, 'Sample Type')
+            trs_info['ss'] = TrsTag(hex_str[1], sc_size, 'Sample Size (bytes)')
         elif tag == '44':
             val = hex2dec(hex_str[0:2])
-            trs_info['ds'] = TrsTag(hex_str, val, 'Data Size')
+            trs_info['ds'] = TrsTag(hex_str, val, 'Data Size (bytes)')
         elif tag == '45':
             val = hex_str
             trs_info['ts'] = TrsTag(hex_str, val, 'Title Space')
@@ -130,7 +174,7 @@ def readHeader(fid):
             val = hex2ascii(hex_str)
             trs_info['dc'] = TrsTag(hex_str, val, 'Description')
         elif tag == '48':
-            val = hex2int(hex_str)
+            val = hex2int32(hex_str)
             trs_info['xo'] = TrsTag(hex_str, val, 'X-axis Offset')
         elif tag == '49':
             val = hex2ascii(hex_str)
@@ -140,9 +184,11 @@ def readHeader(fid):
             trs_info['yl'] = TrsTag(hex_str, val, 'Y-axis Label')
         elif tag == '4B':
             val = hex2float(hex_str)
+            val = (floatSciNote(val,4))
             trs_info['xs'] = TrsTag(hex_str, val, 'X-axis Scale')
         elif tag == '4C':
             val = hex2float(hex_str)
+            val = (floatSciNote(val,4))
             trs_info['ys'] = TrsTag(hex_str, val, 'Y-axis Scale')
         elif tag == '4D':
             val = hex2int(hex_str)
@@ -161,47 +207,60 @@ def readHeader(fid):
 
     return trs_info
 
-class TrsTag:
-    def __init__(self, hexstr, val, desc):
-        self.hexstr = hexstr
-        self.val = val
-        self.desc = desc
+# Use OOP is too slow
+# class Trace(object):
+#     def __init__(self, data, sample):
+#         self.data   = data
+#         self.sample = sample
 
+def readData(fid, data_size):
+    data = fid.read(data_size).hex()
+    return data
 
-# What's the correct way to convert bytes to a hex string in Python 3?
-#   https://stackoverflow.com/a/36149089/8328786
-#   https://docs.python.org/3/library/stdtypes.html#bytes.hex
+def readSample(fid, sample_num, sample_type):
+    sample_arr = []
+    for i in range(0, sample_num):
+        sample_hex = fid.read(1).hex()
+        sample_arr.append(struct.unpack(sample_type, bytearray.fromhex(sample_hex))[0])
+    return sample_arr
 
-# Convert hex to float
-#   https://stackoverflow.com/a/1592362/8328786
-# Python使用struct处理二进制
-#   https://www.cnblogs.com/gala/archive/2011/09/22/2184801.html
-def hex2float(hex_str): # 4 bytes
-    float_num = struct.unpack('f',bytearray.fromhex(hex_str))[0]
-    return float_num
-def hex2int(hex_str): # 4 bytes
-    int_num = struct.unpack('i', bytearray.fromhex(hex_str))[0]
-    return int_num
-def hex2short(hex_str): # 2 bytes
-    short_num = int(hex_str, 16)
-    return short_num
+def parseData(data):
+    init_vec = data[0:16]
+    first_cipher_text = data[16:24]
+    return init_vec, first_cipher_text
 
-def hex2dec(hex_str):
-    dec_num = int(hex_str, 16)
-    return dec_num
+def plotSample(data):
+    pass
 
-# Convert from ASCII string encoded in Hex to plain ASCII?
-#   https://stackoverflow.com/a/27519487/8328786
-def hex2ascii(hex_str):
-    ascii_str = bytes.fromhex(hex_str).decode()
-    return ascii_str
-
-
-
+t1 = time.time()
 
 with open(trsfilename,'rb') as trsfile:
     trs_info = readHeader(trsfile)
 
+    print('| {:-<3} | {:-<20} | {:-<10} | {:->10} |'.format('', '', '', ''))
+    print('| {:<3} | {:<20} | {:<10} | {:>10} |'.format('Key', 'Description', 'Hex', 'Value'))
+    print('| {:-<3} | {:-<20} | {:-<10} | {:->10} |'.format('', '', '', ''))
     for key, item in trs_info.items():
-        print(key, item.desc, item.hexstr, item.val)
+        print('| {:<3} | {:<20} | {:<10} | {:>10} |'.format(key, item.desc, item.hexstr, item.val))
+    print('| {:-<3} | {:-<20} | {:-<10} | {:->10} |'.format('', '', '', ''))
 
+    print('\n')
+
+    sample_mat = np.zeros((1,trs_info['ns'].val), dtype='int8')
+
+    for i in range(1,20):
+        sys.stdout.write('\r>>> Reading trace: {:0>7}'.format(i))
+        # sys.stdout.flush()
+        readData(trsfile, trs_info['ds'].val)
+
+        sample_arr = readSample(trsfile, trs_info['ns'].val, trs_info['st'].val)
+
+        # sample_mat = np.vstack([sample_mat, sample_arr])
+
+        # with open('zuc_sample.txt','w') as zuc_sample_file:
+        #     np.savetxt(zuc_sample_file, sample_mat)
+
+t2 = time.time()
+print('\n')
+print('Elapsed time: ',t2-t1)
+print('\n')
