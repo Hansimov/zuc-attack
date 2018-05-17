@@ -3,3 +3,5 @@
 *.pdf
 *.cfg
 *.txt
+output.nb
+__pycache__/
