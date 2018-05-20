@@ -31,7 +31,47 @@ def hex2ascii(hex_str):
     ascii_str = bytes.fromhex(hex_str).decode()
     return ascii_str
 def hex2binvec(hex_str):
-    pass
+    hex_str = hex_str.upper()
+    hex_len = len(hex_str)
+    bin_len = 4 * hex_len
+    bin_vec = []
+    for i in range(0, hex_len):
+        if   hex_str[i] == '0':
+            bin_vec += [0,0,0,0]
+        elif hex_str[i] == '1':
+            bin_vec += [0,0,0,1]
+        elif hex_str[i] == '2':
+            bin_vec += [0,0,1,0]
+        elif hex_str[i] == '3':
+            bin_vec += [0,0,1,1]
+        elif hex_str[i] == '4':
+            bin_vec += [0,1,0,0]
+        elif hex_str[i] == '5':
+            bin_vec += [0,1,0,1]
+        elif hex_str[i] == '6':
+            bin_vec += [0,1,1,0]
+        elif hex_str[i] == '7':
+            bin_vec += [0,1,1,1]
+        elif hex_str[i] == '8':
+            bin_vec += [1,0,0,0]
+        elif hex_str[i] == '9':
+            bin_vec += [1,0,0,1]
+        elif hex_str[i] == 'A':
+            bin_vec += [1,0,1,0]
+        elif hex_str[i] == 'B':
+            bin_vec += [1,0,1,1]
+        elif hex_str[i] == 'C':
+            bin_vec += [1,1,0,0]
+        elif hex_str[i] == 'D':
+            bin_vec += [1,1,0,1]
+        elif hex_str[i] == 'E':
+            bin_vec += [1,1,1,0]
+        elif hex_str[i] == 'F':
+            bin_vec += [1,1,1,1]
+        else:
+            bin_vec += [0,0,0,0]
+    # print(bin_vec)
+    return bin_vec
 
 def hex2binstr(hex_str):
     hex_str = hex_str.upper()
@@ -83,3 +123,17 @@ def floatSciNote(float_num, sig_digits):
     sci_note_fmt = '{:.' + str(sig_digits) + 'E}'
     sci_float_str = sci_note_fmt.format(float_num)
     return sci_float_str
+
+
+def str2intlist(str_in):
+    int_list = list(map(int, str_in))
+    return int_list
+
+def bitlist2int(bit_list):
+    int_num = 0
+    bit_list = list(map(int,bit_list))
+    bit_list.reverse()
+    for i in range(0, len(bit_list)):
+        int_num += 2**i * bit_list[i]
+    print(int_num)
+    return int_num

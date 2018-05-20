@@ -75,8 +75,9 @@ import numpy as np
 import struct
 import time
 import sys
-import pickle
+# import pickle
 from convertType import *
+import matplotlib.pyplot as plt
 
 # trsfilename = 'celcom.trs'
 trsfilename = 'zuc_traces.trs'
@@ -240,7 +241,7 @@ with open(trsfilename,'rb') as trsfile:
 
     print('\n')
     print('| {:-<3} | {:-<20} | {:-<10} | {:->10} |'.format('', '', '', ''))
-    print('| {:<3} | {:<20} | {:<10} | {:>10} |'.format('Key', 'Description', 'Hex', 'Value'))
+    print('| {:<3} | {:<20} | {:<10} | {:>10} |'.format('Key', 'Definition', 'Hex', 'Value'))
     print('| {:-<3} | {:-<20} | {:-<10} | {:->10} |'.format('', '', '', ''))
     for key, item in trs_info.items():
         print('| {:<3} | {:<20} | {:<10} | {:>10} |'.format(key, item.desc, item.hexstr, item.val))
@@ -249,50 +250,23 @@ with open(trsfilename,'rb') as trsfile:
     print('\n')
 
 
-    trace_bgn, trace_end = 0, 0
-    data_mat = [''] * num
-    # data_mat = []
-    # sample_mat = np.zeros((1,trs_info['ns'].val), dtype='int8')
-    sample_mat = [0] * num
-    # sample_mat = []
+    trace_num = 100
+    data_mat = [''] * trace_num
+    sample_mat = [0] * trace_num
 
-    for i in range(trace_bgn, trace_end+1):
-        sys.stdout.write('\r>>> Reading trace: {:0>7}'.format(i))
+    for i in range(0, trace_num):
+        sys.stdout.write('\r>>> Reading trace: {:0>7}\n'.format(i))
         # sys.stdout.flush()
         data_row = readData(trsfile, trs_info['ds'].val)
-        # sample_row = [i] * 10
         sample_row = readSample(trsfile, trs_info['ns'].val, trs_info['st'].val)
 
         data_mat[i] = data_row
-        # data_mat.append(data_row)
-
-        # sample_mat = np.vstack([sample_mat, sample_row])
         sample_mat[i] = sample_row
-        # sample_mat.append(sample_row)
-
-    # with open('zuc_sample.txt','a') as zuc_sample_file:
-    #     np.savetxt(zuc_sample_file, sample_mat)
-
-    # print(data_mat)
-    # print(sample_mat)
 
     t2 = time.time()
     print('\n')
-    print('Time of reading: ',t2-t1)
+    print('Time of reading: {:.3} s'.format(t2-t1))
 
-    print('\n')
-    with open('zuc_sample.txt','w') as zuc_sample_file:
-        # pickle.dump(sample_mat, zuc_sample_file)
-        for i in range(0, num):
-            sys.stdout.write('\r<<< Dumping trace: {:0>7}'.format(i))
-            for col in sample_mat[i]:
-                print(col, end = ' ', file=zuc_sample_file)
-            print('', file=zuc_sample_file)
-    # with open('zuc_sample.txt','r') as zuc_sample_file:
-    #     xx = pickle.load(zuc_sample_file)
-    # print(type(xx[0][0]))
+    # plt.plot(sample_row)
+    # plt.show()
 
-    t3 = time.time()
-    print('\n')
-    print('Time of writing: ',t3-t2)
-    print('\n')
