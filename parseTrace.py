@@ -150,7 +150,7 @@ def readHeader(fid):
     readmode = 1
     while readmode == 1:
         hex_str = readValueOfTag(fid)
-
+        print(hex_str)
         if tag == '41':
             val = hex2int32(hex_str)
             trs_info['nt'] = TrsTag(hex_str, val, 'Number of Traces')
@@ -250,12 +250,12 @@ with open(trsfilename,'rb') as trsfile:
     print('\n')
 
 
-    trace_num = 100
+    trace_num = 1000
     data_mat = [''] * trace_num
     sample_mat = [0] * trace_num
 
     for i in range(0, trace_num):
-        sys.stdout.write('\r>>> Reading trace: {:0>7}\n'.format(i))
+        sys.stdout.write('\r>>> Reading trace: {:0>7}'.format(i))
         # sys.stdout.flush()
         data_row = readData(trsfile, trs_info['ds'].val)
         sample_row = readSample(trsfile, trs_info['ns'].val, trs_info['st'].val)

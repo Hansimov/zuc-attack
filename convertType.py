@@ -1,4 +1,5 @@
 import struct
+import math
 from decimal import Decimal
 
 # What's the correct way to convert bytes to a hex string in Python 3?
@@ -21,9 +22,7 @@ def hex2int32(hex_str):   # 4 bytes
     int32_num = struct.unpack('i', bytearray.fromhex(hex_str))[0]
     return int32_num
 
-def hex2dec(hex_str):
-    dec_num = int(hex_str, 16)
-    return dec_num
+
 
 # Convert from ASCII string encoded in Hex to plain ASCII?
 #   https://stackoverflow.com/a/27519487/8328786
@@ -137,3 +136,88 @@ def bitlist2int(bit_list):
         int_num += 2**i * bit_list[i]
     print(int_num)
     return int_num
+
+
+def hex2dec(hex_str):
+    dec_num = int(hex_str, 16)
+    return dec_num
+
+# def hex2dec(hex_str):
+#     hex_str = hex_str.upper()
+#     if   hex_str == '0':
+#         dec_num = 0
+#     elif hex_str == '1':
+#         dec_num = 1
+#     elif hex_str == '2':
+#         dec_num = 2
+#     elif hex_str == '3':
+#         dec_num = 3
+#     elif hex_str == '4':
+#         dec_num = 4
+#     elif hex_str == '5':
+#         dec_num = 5
+#     elif hex_str == '6':
+#         dec_num = 6
+#     elif hex_str == '7':
+#         dec_num = 7
+#     elif hex_str == '8':
+#         dec_num = 8
+#     elif hex_str == '9':
+#         dec_num = 9
+#     elif hex_str == 'A':
+#         dec_num = 10
+#     elif hex_str == 'B':
+#         dec_num = 11
+#     elif hex_str == 'C':
+#         dec_num = 12
+#     elif hex_str == 'D':
+#         dec_num = 13
+#     elif hex_str == 'E':
+#         dec_num = 14
+#     elif hex_str == 'F':
+#         dec_num = 15
+#     else:
+#         dec_num = 0
+# 
+#     return dec_num
+
+def binvec2hex(bin_vec):
+    hex_len = math.ceil(len(bin_vec) / 4)
+    bin_vec = [0]*(4*hex_len-len(bin_vec)) + bin_vec
+    hex_str = ''
+    for i in range(0, hex_len):
+        if   bin_vec[4*i:4*(i+1)] == [0,0,0,0]:
+            hex_str += '0'
+        elif bin_vec[4*i:4*(i+1)] == [0,0,0,1]:
+            hex_str += '1'
+        elif bin_vec[4*i:4*(i+1)] == [0,0,1,0]:
+            hex_str += '2'
+        elif bin_vec[4*i:4*(i+1)] == [0,0,1,1]:
+            hex_str += '3'
+        elif bin_vec[4*i:4*(i+1)] == [0,1,0,0]:
+            hex_str += '4'
+        elif bin_vec[4*i:4*(i+1)] == [0,1,0,1]:
+            hex_str += '5'
+        elif bin_vec[4*i:4*(i+1)] == [0,1,1,0]:
+            hex_str += '6'
+        elif bin_vec[4*i:4*(i+1)] == [0,1,1,1]:
+            hex_str += '7'
+        elif bin_vec[4*i:4*(i+1)] == [1,0,0,0]:
+            hex_str += '8'
+        elif bin_vec[4*i:4*(i+1)] == [1,0,0,1]:
+            hex_str += '9'
+        elif bin_vec[4*i:4*(i+1)] == [1,0,1,0]:
+            hex_str += 'A'
+        elif bin_vec[4*i:4*(i+1)] == [1,0,1,1]:
+            hex_str += 'B'
+        elif bin_vec[4*i:4*(i+1)] == [1,1,0,0]:
+            hex_str += 'C'
+        elif bin_vec[4*i:4*(i+1)] == [1,1,0,1]:
+            hex_str += 'D'
+        elif bin_vec[4*i:4*(i+1)] == [1,1,1,0]:
+            hex_str += 'E'
+        elif bin_vec[4*i:4*(i+1)] == [1,1,1,1]:
+            hex_str += 'F'
+        else:
+            hex_str += 'X'
+    return hex_str

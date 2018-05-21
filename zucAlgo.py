@@ -1,4 +1,5 @@
 import struct
+import sys
 from convertType import *
 from binaryOperation import *
 
@@ -7,13 +8,15 @@ v_hex = [''] * 16
 k = [''] * 16 # initial key     -  8 bit x 16
 v = [''] * 16 # initial vector  -  8 bit x 16
 d = [''] * 16 # constant data   - 15 bit x 16
-s = [''] * 16 # combined string - 31 bit x 16
+s = [[0]*31] * 17 # combined bit list - 31 bit x 16+1 (The last is used to update)
 r1 = [0] * 32 # register 1 - 32 bit
 r2 = [0] * 32 # register 2 - 32 bit
-x = [''] * 4 # string - 32 bit x 4
+x = [[0]*32] * 4 # list - 32 bit x 4
+w = [0] * 32 # var in nonLinearFucntion(), used by zucInit()
 
-def sbox():
-    sbox0 = [
+def sboxOfZuc(list_in):
+    sbox = [[]] * 4
+    sbox[0] = [
         ['3E', '72', '5B', '47', 'CA', 'E0', '00', '33', '04', 'D1', '54', '98', '09', 'B9', '6D', 'CB'], 
         ['7B', '1B', 'F9', '32', 'AF', '9D', '6A', 'A5', 'B8', '2D', 'FC', '1D', '08', '53', '03', '90'],
         ['4D', '4E', '84', '99', 'E4', 'CE', 'D9', '91', 'DD', 'B6', '85', '48', '8B', '29', '6E', 'AC'], 
@@ -30,7 +33,7 @@ def sbox():
         ['F6', 'FA', '36', 'D2', '50', '68', '9E', '62', '71', '15', '3D', 'D6', '40', 'C4', 'E2', '0F'],
         ['8E', '83', '77', '6B', '25', '05', '3F', '0C', '30', 'EA', '70', 'B7', 'A1', 'E8', 'A9', '65'],
         ['8D', '27', '1A', 'DB', '81', 'B3', 'A0', 'F4', '45', '7A', '19', 'DF', 'EE', '78', '34', '60']];
-    sbox1 = [
+    sbox[1] = [
         ['55', 'C2', '63', '71', '3B', 'C8', '47', '86', '9F', '3C', 'DA', '5B', '29', 'AA', 'FD', '77'], 
         ['8C', 'C5', '94', '0C', 'A6', '1A', '13', '00', 'E3', 'A8', '16', '72', '40', 'F9', 'F8', '42'], 
         ['44', '26', '68', '96', '81', 'D9', '45', '3E', '10', '76', 'C6', 'A7', '8B', '39', '43', 'E1'], 
@@ -47,8 +50,17 @@ def sbox():
         ['5A', '6A', '54', '1E', '41', '31', '92', '35', 'C4', '33', '07', '0A', 'BA', '7E', '0E', '34'], 
         ['88', 'B1', '98', '7C', 'F3', '3D', '60', '6C', '7B', 'CA', 'D3', '1F', '32', '65', '04', '28'], 
         ['64', 'BE', '85', '9B', '2F', '59', '8A', 'D7', 'B0', '25', 'AC', 'AF', '12', '03', 'E2', 'F2']];
-    sbox2 = sbox0
-    sbox3 = sbox1
+    sbox[2] = sbox[0]
+    sbox[3] = sbox[1]
+    list_out = [0] * 32
+
+    for i in range(0, 4):
+        list_tmp = list_in[8*i:8*(i+1)]
+        hex_tmp = binvec2hex(list_tmp)
+        row_tmp, col_tmp = hex2dec(hex_tmp[0]), hex2dec(hex_tmp[1])
+        hex_tmp_s = sbox[i][row_tmp][col_tmp]
+        list_out[8*i:8*(i+1)] = hex2binvec(hex_tmp_s)
+    return list_out
 
 
 def linearTransform(list_in, typex):
@@ -60,13 +72,13 @@ def linearTransform(list_in, typex):
 
     list_out = [0] * len(list_in)
     for i in range(0,len(shift_bits_list)):
-        list_out = bitXor(list_out, circShiftLeft(list_in, shift_bits_list[i]))
+        list_out = binaryXor(list_out, circShiftLeft(list_in, shift_bits_list[i]))
 
     return list_out
 
 
 def varsInit():
-    global k_hex, k, v_hex, v, d, s, r1, r2, x
+    global k_hex, k, v_hex, v, d, s, r1, r2
     # k_hex = ['01','23','45','67','89','AB','CD','EF','01','23','45','67','89','AB','CD','EF']
     k_hex = ['00','00','00','00','00','00','00','00','00','00','00','00','00','00','00','00']
     for i in range(0, 16):
@@ -83,67 +95,81 @@ def varsInit():
 
     for i in range(0, 16):
         s[i] = k[i] + d[i] + v[i]
-
+        s[i] = list(map(int,s[i]))
     r1 = [0] * 32
     r2 = [0] * 32
 
 def lfsrInit():
-    global k_hex, k, v_hex, v, d, s, r1, r2, x
+    global k_hex, k, v_hex, v, d, s, w
     shift_bits_list = [15, 17, 21, 20, 8, 0]
     shift_index_list = [15, 13, 10, 4, 0, 0]
-    sum_list = [0] * 31
+    xv = [0] * 31
     for i in range(0, len(shift_bits_list)):
         s_i_shifted = circShiftLeft(s[shift_index_list[i]], shift_bits_list[i])
-        s_i_shifted_list = list(map(int,s_i_shifted))
-        sum_list = mod_2e31m1(sum_list, s_i_shifted_list)
-    vv = sum_list
-    # uu = 
-
-    return sum_list
-
+        xv = modAdd_2e31m1(xv, s_i_shifted)
+    s[16] = modAdd_2e31m1(shiftLeft(w, -1), xv) # The only diffrence of lfsrWork() and lfsrInit()
+    if s[16] == [0]*31:
+        s[16] = [1]*31
+    for i in range(0,16):
+        s[i] = s[i+1]
 
 def lfsrWork():
-    pass
+    global k_hex, k, v_hex, v, d, s
+    shift_bits_list = [15, 17, 21, 20, 8, 0]
+    shift_index_list = [15, 13, 10, 4, 0, 0]
+    xv = [0] * 31
+    for i in range(0, len(shift_bits_list)):
+        s_i_shifted = circShiftLeft(s[shift_index_list[i]], shift_bits_list[i])
+        xv = modAdd_2e31m1(xv, s_i_shifted)
+    s[16] = xv # The only diffrence of lfsrWork() and lfsrInit()
+    if s[16] == [0]*31:
+        s[16] = [1]*31
+    for i in range(0,16):
+        s[i] = s[i+1]
 
 def nonLinearFunction():
-    global x, r1, r2
-    w = binaryAdd(bitXor(x[0], r1), r2)
+    global w, x, r1, r2
+    w = binaryAdd(binaryXor(x[0], r1), r2)
     w1 = binaryAdd(r1, x[1])
-    w2 = bitXor(r2, x[2])
-    r1 = sbox(linearTransform(w1[16:]+w2[0:16], 1))
-    r2 = sbox(linearTransform(w2[16:]+w1[0:16], 2))
-
+    w2 = binaryXor(r2, x[2])
+    r1 = sboxOfZuc(linearTransform(w1[-16:]+w2[0:16], 1))
+    r2 = sboxOfZuc(linearTransform(w2[-16:]+w1[0:16], 2))
 
 def bitReorganization():
     global x, s
-    x[0] = s[15][0:16] + s[14][16:]
-    x[1] = s[11][16:] + s[9][0:16]
-    x[2] = s[7][16:] + s[5][0:16]
-    x[3] = s[2][16:] + s[0][0:16]
-    for i in range(0,4):
-        x[i] = list(map(int, x[i]))
+    x[0] = s[15][0:16] + s[14][-16:]
+    x[1] = s[11][-16:] + s[9][0:16]
+    x[2] = s[7][-16:] + s[5][0:16]
+    x[3] = s[2][-16:] + s[0][0:16]
 
 def zucInit():
+    global k_hex, k, v_hex, v, d, s, r1, r2, x, w
     varsInit()
-    for i in xrange(0,32):
+    for i in range(0,32):
+        print('zucInit(): {}'.format(i))
+        # print(list(map(binvec2hex, [x[0], x[1], x[2],x[3], r1, r2, binaryXor(x[3],w), s[15]])))
         bitReorganization()
         nonLinearFunction()
         lfsrInit()
-
+        
 def zucWork():
+    global k_hex, k, v_hex, v, d, s, r1, r2, x, w
     bitReorganization()
     nonLinearFunction()
     lfsrWork()
 
 def outputKey(num=1):
+    global k_hex, k, v_hex, v, d, s, r1, r2, x, w
     for i in range(0, num):
+        # print(list(map(binvec2hex, [x[0], x[1], x[2],x[3], r1, r2, binaryXor(x[3],w), s[15]])))
         bitReorganization()
         nonLinearFunction()
-        key_out = binXor(w,x3)
-        print('Key {:>03} {}'.format(i, key_out))
+        key_bin = binaryXor(w, x[3])
+        key_hex = binvec2hex(key_bin)
+        print('Key {:>02} {}'.format(i, key_hex.lower()))
         lfsrWork()
 
-# if __name__ == '__main__':
-#     zucInit()
-#     zucWork()
-#     outputKey()
+if __name__ == '__main__':
+    zucInit()
+    zucWork()
+    outputKey(3)

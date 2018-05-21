@@ -65,10 +65,10 @@ def bitAdd(a,b,c):
         pass
     return sum_bit, carry_bit
 
-def binaryAdd(bits, bit_list1, bit_list2):
+def binaryAdd(bit_list1, bit_list2, isOutputCarry=False):
     bit_list1 = list(map(int, bit_list1))
     bit_list2 = list(map(int, bit_list2))
-    # print(bit_list2)
+    bits = max(len(bit_list1), len(bit_list2))
     bit_list1.reverse()
     bit_list2.reverse()
     sum_list   = [0] * bits
@@ -77,24 +77,30 @@ def binaryAdd(bits, bit_list1, bit_list2):
         sum_list[i], carry_list[i+1] = bitAdd(bit_list1[i], bit_list2[i], carry_list[i])
     sum_list.reverse()
     carry_list.reverse()
-    return sum_list, carry_list
 
-def mod_2e31m1(bit_list1, bit_list2):
-    sum_list, carry_list = binaryAdd(31, bit_list1, bit_list2)
-    # print(sum_list)
-    carry_list_x = [0]*31
-    carry_list_x.append(carry_list[31])
-    sum_list, _ = binaryAdd(31, sum_list, carry_list_x)
+    if isOutputCarry:
+        return sum_list, carry_list
+    else:
+        return sum_list
+
+def modAdd_2e31m1(bit_list1, bit_list2):
+    sum_list, carry_list = binaryAdd(bit_list1, bit_list2, True)
+    # Note: carry_list[0] is the Most Significanr Bit
+    carry_list_x = [0]*30
+    carry_list_x.append(carry_list[0])
+    sum_list = binaryAdd(sum_list, carry_list_x)
     return sum_list
 
+def bitXor(a,b):
+    if a == b:
+        return 0
+    else:
+        return 1
 
-def bitXor(*args):
+def binaryXor(*args):
     xor_result = [0] * len(args[0])
     for i in range(0, len(args)):
         bit_list_tmp = list(map(int, args[i]))
         for i in range(0, len(bit_list_tmp)):
-            if bit_list_tmp[i] == xor_result[i]:
-                xor_result[i] = 0
-            else:
-                xor_result[i] = 1
+            xor_result[i] = bitXor(bit_list_tmp[i], xor_result[i])
     return(xor_result)
