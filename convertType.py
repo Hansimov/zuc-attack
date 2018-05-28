@@ -22,8 +22,6 @@ def hex2int32(hex_str):   # 4 bytes
     int32_num = struct.unpack('i', bytearray.fromhex(hex_str))[0]
     return int32_num
 
-
-
 # Convert from ASCII string encoded in Hex to plain ASCII?
 #   https://stackoverflow.com/a/27519487/8328786
 def hex2ascii(hex_str):
@@ -137,6 +135,17 @@ def bitlist2int(bit_list):
     print(int_num)
     return int_num
 
+def dec2binstr(dec_num, bits=8):
+    bin_str = ('{:0>' + str(bits) + 'b}').format(dec_num)
+    return bin_str
+
+def dec2binvec(dec_num, bits=8):
+    bin_vec = list(map(int,dec2binstr(dec_num, bits)))
+    return bin_vec
+
+def dec2hex(dec_num,bits=2):
+    hex_str = ('{:>0'+str(bits) + 'X}').format(dec_num)
+    return hex_str
 
 def hex2dec(hex_str):
     dec_num = int(hex_str, 16)

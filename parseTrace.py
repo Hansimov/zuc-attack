@@ -79,8 +79,7 @@ import sys
 from convertType import *
 import matplotlib.pyplot as plt
 
-# trsfilename = 'celcom.trs'
-trsfilename = 'zuc_traces.trs'
+
 
 class TrsTag:
     def __init__(self, hexstr, val, desc):
@@ -150,7 +149,6 @@ def readHeader(fid):
     readmode = 1
     while readmode == 1:
         hex_str = readValueOfTag(fid)
-        print(hex_str)
         if tag == '41':
             val = hex2int32(hex_str)
             trs_info['nt'] = TrsTag(hex_str, val, 'Number of Traces')
@@ -234,39 +232,43 @@ def parseData(data):
 def plotSample(data):
     pass
 
-t1 = time.time()
+if __name__ == '__main__':
 
-with open(trsfilename,'rb') as trsfile:
-    trs_info = readHeader(trsfile)
+    # trsfilename = 'celcom.trs'
+    trsfilename = 'zuc_traces.trs'
 
-    print('\n')
-    print('| {:-<3} | {:-<20} | {:-<10} | {:->10} |'.format('', '', '', ''))
-    print('| {:<3} | {:<20} | {:<10} | {:>10} |'.format('Key', 'Definition', 'Hex', 'Value'))
-    print('| {:-<3} | {:-<20} | {:-<10} | {:->10} |'.format('', '', '', ''))
-    for key, item in trs_info.items():
-        print('| {:<3} | {:<20} | {:<10} | {:>10} |'.format(key, item.desc, item.hexstr, item.val))
-    print('| {:-<3} | {:-<20} | {:-<10} | {:->10} |'.format('', '', '', ''))
+    t1 = time.time()
 
-    print('\n')
+    with open(trsfilename,'rb') as trsfile:
+        trs_info = readHeader(trsfile)
 
+        print('\n')
+        print('| {:-<3} | {:-<20} | {:-<10} | {:->10} |'.format('', '', '', ''))
+        print('| {:<3} | {:<20} | {:<10} | {:>10} |'.format('Key', 'Definition', 'Hex', 'Value'))
+        print('| {:-<3} | {:-<20} | {:-<10} | {:->10} |'.format('', '', '', ''))
+        for key, item in trs_info.items():
+            print('| {:<3} | {:<20} | {:<10} | {:>10} |'.format(key, item.desc, item.hexstr, item.val))
+        print('| {:-<3} | {:-<20} | {:-<10} | {:->10} |'.format('', '', '', ''))
 
-    trace_num = 1000
-    data_mat = [''] * trace_num
-    sample_mat = [0] * trace_num
+        print('\n')
 
-    for i in range(0, trace_num):
-        sys.stdout.write('\r>>> Reading trace: {:0>7}'.format(i))
-        # sys.stdout.flush()
-        data_row = readData(trsfile, trs_info['ds'].val)
-        sample_row = readSample(trsfile, trs_info['ns'].val, trs_info['st'].val)
+        trace_num = 1
+        data_mat = [''] * trace_num
+        sample_mat = [0] * trace_num
 
-        data_mat[i] = data_row
-        sample_mat[i] = sample_row
+        for i in range(0, trace_num):
+            sys.stdout.write('\r>>> Reading trace: {:0>7}'.format(i))
+            # sys.stdout.flush()
+            data_row = readData(trsfile, trs_info['ds'].val)
+            sample_row = readSample(trsfile, trs_info['ns'].val, trs_info['st'].val)
 
-    t2 = time.time()
-    print('\n')
-    print('Time of reading: {:.3} s'.format(t2-t1))
+            data_mat[i] = data_row
+            sample_mat[i] = sample_row
 
-    # plt.plot(sample_row)
-    # plt.show()
+        t2 = time.time()
+        print('\n')
+        print('Time of reading: {:.3} s'.format(t2-t1))
+
+        plt.plot(sample_row)
+        plt.show()
 
