@@ -2,5 +2,8 @@
 *.bcf
 *.log
 *.toc
+*.gz
+*.xml
+*.out
 *.zip
 SJTUThesis-master/
