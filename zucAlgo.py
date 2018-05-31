@@ -8,10 +8,10 @@ v_hex = [''] * 16
 k = [''] * 16 # initial key     -  8 bit x 16
 v = [''] * 16 # initial vector  -  8 bit x 16
 d = [''] * 16 # constant data   - 15 bit x 16
-s = [[0]*31] * 17 # combined bit list - 31 bit x 16+1 (The last is used to update)
+s = [[0]*31 for _ in range(17)] # combined bit list - 31 bit x 16+1 (The last is used to update)
 r1 = [0] * 32 # register 1 - 32 bit
 r2 = [0] * 32 # register 2 - 32 bit
-x = [[0]*32] * 4 # list - 32 bit x 4
+x = [[0]*32 for _ in range(4)] # list - 32 bit x 4
 w = [0] * 32 # var in nonLinearFucntion(), used by zucInit()
 d = [ '100010011010111', '010011010111100', '110001001101011', '001001101011110',
       '101011110001001', '011010111100010', '111000100110101', '000100110101111',
