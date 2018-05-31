@@ -135,7 +135,57 @@ if __name__ == '__main__':
         # trs_info = readHeader(trs_file)
         # header_end = trs_file.tell()
 
-        trace_num = 10000
+# ---------------------------------------------------------------------- #
+# Finding positions of leakage
+
+    # Reading traces
+        trace_num = 1000
+        sample_num = trs_info['ns'].val
+        offset = 0
+
+        sample_mat = [[]]*trace_num
+
+        for i in range(0, trace_num):
+            sys.stdout.write('\r>>> Reading trace: {}'.format(i+1))
+            # initvec_mat[i] = getTraceInitVector(trs_file, header_end, i)
+            sample_mat[i] = getTraceSample(trs_file, header_end, i, sample_num, offset)
+
+        fig, ax1 = plt.subplots()
+        ax1.plot(sample_mat[i],'b')
+
+    # Loading inter values and calculating hamming weights
+        key_index = hex2dec('AB') # correct k5 of inter_val_2
+        sample_mat = np.array(sample_mat)
+        hw_mat_correct = [0] * trace_num
+
+        print('')
+        inter_val_2_file = open('inter_val_2.txt','r')
+
+        for i in range(0, trace_num):
+            inter_val_2_file.seek((i*256 + key_index)*34)
+            inter_val_2_correct = inter_val_2_file.readline().strip()
+            hw_mat_correct[i] = calcHammingWeight(inter_val_2_correct)
+
+    # Calculating correlations of each point in samples
+        corr_mat = [0] * sample_num
+        for j in range(0, sample_num):
+            corr_mat[j] = abs(np.corrcoef(hw_mat_correct, sample_mat[:,j])[0][1])
+
+        ax2 = ax1.twinx()
+        ax2.plot(corr_mat,'r')
+
+        t2 = time.time()
+        print('Time of processing: {} s'.format(t2-t1))
+
+        plt.show()
+
+
+'''
+
+# ---------------------------------------------------------------------- #
+# Reading traces
+
+        trace_num = 1500
 
         # sample_num = trs_info['ns'].val
         # sample_num = 600
@@ -166,9 +216,12 @@ if __name__ == '__main__':
 
         corr_mat     = [ [0]*sample_num for _ in range(256)]
         corr_avg     = [0]*256
-        interval_mat = [ [0]*trace_num for _ in range(256)]
+        # inter_val_mat = [ [0]*trace_num for _ in range(256)]
 
         hw_mat = [[0]*trace_num for _ in range(256)]
+
+
+# Loading inter values
 
         print('')
         # inter_val_1_file = open('inter_val_1.txt','r')
@@ -181,7 +234,10 @@ if __name__ == '__main__':
                 inter_val_2 = list(map(int, inter_val_2_str))
                 hw_mat[k][i] = calcHammingWeight(inter_val_2)
 
-        corr_max = [[0]*10 for _ in range(256)]
+
+# Calculating correlation matrix of guessing key
+        print('')
+        corr_max = [[0]*5 for _ in range(256)]
         for k in range(0,256):
             print('>>> Calulating correlation matrix of guessing key: {}'.format(k))
             for j in range(0, sample_num):
@@ -198,3 +254,5 @@ if __name__ == '__main__':
         plt.show()
 
         inter_val_2_file.close()
+
+'''
