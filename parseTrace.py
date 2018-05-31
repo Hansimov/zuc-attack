@@ -215,6 +215,7 @@ def readHeader(fid):
 
 def readData(fid, data_size):
     data = fid.read(data_size).hex()
+    # print(fid.tell())
     return data
 
 def readSample(fid, sample_num, sample_type):
@@ -252,23 +253,24 @@ if __name__ == '__main__':
 
         print('\n')
 
-        trace_num = 1
+        trace_num = 10
         data_mat = [''] * trace_num
         sample_mat = [0] * trace_num
 
         for i in range(0, trace_num):
-            sys.stdout.write('\r>>> Reading trace: {:0>7}'.format(i))
+            # sys.stdout.write('\r>>> Reading trace: {:0>7}'.format(i))
             # sys.stdout.flush()
             data_row = readData(trsfile, trs_info['ds'].val)
             sample_row = readSample(trsfile, trs_info['ns'].val, trs_info['st'].val)
 
             data_mat[i] = data_row
+            print(data_row[0:32], data_row[32:40], data_row[40:64])
             sample_mat[i] = sample_row
 
         t2 = time.time()
         print('\n')
         print('Time of reading: {:.3} s'.format(t2-t1))
 
-        plt.plot(sample_row)
-        plt.show()
+        # plt.plot(sample_row)
+        # plt.show()
 

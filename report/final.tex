@@ -89,8 +89,8 @@
 % \include{tex/summary}
 % \include{file}
 \include{tex/01_crypto}    % 4k
-\include{tex/02_dpa}      % 5k
-\include{tex/03_zuc}      % 2k
+\include{tex/02_dpa}      % 4.5k
+\include{tex/03_zuc}      % 2.5k
 \include{tex/04_attack}   % 2k
 \include{tex/05_results}  % 2k
 
@@ -106,6 +106,13 @@
 
 % 参考资料
 \printbibliography[heading=bibintoc]
+%% final.bib
+% 
+% 3GPP LTE 国际加密标准 ZUC 算法
+% 能量分析攻击
+% Differential Power Analysis on ZUC Algorithm
+% 祖冲之算法的国际标准化进展和终端一致性测试
+
 
 % 致谢、发表论文、申请专利、参与项目、简历
 % 用于盲审的论文需隐去致谢、发表论文、申请专利、参与的项目
@@ -116,7 +123,7 @@
 
 % 盲审删去删去致谢页
 \ifsjtu@review\relax\else
-  % \include{tex/ack}         % 致谢
+  \include{tex/ack}         % 致谢
 \fi
 
 \ifsjtu@bachelor
