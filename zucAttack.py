@@ -33,7 +33,7 @@ def getTraceInitVector(fid, header_end, trace_index):
     init_vec_hex = fid.read(trs_info['ds'].val).hex()
     return init_vec_hex[0:32]
 
-def getTraceSample(fid, header_end, trace_index, sample_num=1, offset=1300):
+def getTraceSample(fid, header_end, trace_index, sample_num=1, offset=0):
     pointer_pos = header_end + trace_index * (trs_info['ds'].val + trs_info['ns'].val) \
                  + trs_info['ds'].val + offset
     fid.seek(pointer_pos, 0)
@@ -135,28 +135,32 @@ if __name__ == '__main__':
         # trs_info = readHeader(trs_file)
         # header_end = trs_file.tell()
 
-        trace_num = 10
+        trace_num = 10000
 
         # sample_num = trs_info['ns'].val
-        sample_num = 1
+        # sample_num = 600
+        # sample_num = 1
+        sample_num = 800
 
-        initvec_mat = [[]]*trace_num
+        # offset = 1640
+        # offset = 1200
+        offset = 900
+
+        # initvec_mat = [[]]*trace_num
         sample_mat = [[]]*trace_num
 
-        plt.figure(num=None, figsize=(20, 9), dpi=80, facecolor='w', edgecolor='k')
+        # plt.figure(num=None, figsize=(20, 9), dpi=80, facecolor='w', edgecolor='k')
 
         for i in range(0, trace_num):
             sys.stdout.write('\r>>> Reading trace: {}'.format(i+1))
-            initvec_mat[i] = getTraceInitVector(trs_file, header_end, i)
-            sample_mat[i] = getTraceSample(trs_file, header_end, i, sample_num, 1300)
+            # initvec_mat[i] = getTraceInitVector(trs_file, header_end, i)
+            sample_mat[i] = getTraceSample(trs_file, header_end, i, sample_num, offset)
             # plt.cla()
             # plt.plot(sample_mat[i])
             # plt.pause(0.01)
+        # plt.plot(sample_mat[i])
         # plt.show()
 
-        k_all = [[0]*8 for _ in range(256)]
-        for k in range(0,256):
-            k_all[k] = dec2binvec(k, 8)
 
         sample_mat = np.array(sample_mat)
 
@@ -167,41 +171,30 @@ if __name__ == '__main__':
         hw_mat = [[0]*trace_num for _ in range(256)]
 
         print('')
-        inter_val_1_file = open('inter_val_1.txt','r')
-        aa = inter_val_1_file.readline()
-        print(list(map(int, aa.strip())))
+        # inter_val_1_file = open('inter_val_1.txt','r')
+        inter_val_2_file = open('inter_val_2.txt','r')
 
-        # print('\n')
-        # for k in range(0, 256):
-        #     print('>>> Calulating inter values of guessing key: {}'.format(k))
-        #     for i in range(0, trace_num):
-        #         k_guess = k_all[k]
-        #         # interval_mat[k][i], _ = calcInterValue(initvec_mat[i], k9=k_guess)
-        #         # _, interval_mat[k][i] = calcInterValue(initvec_mat[i], k5=k_guess)
-        #         hw_mat[k][i] = calcHammingWeight(interval_mat[k][i])
-        #     print('')
+        for i in range(0, trace_num):
+            sys.stdout.write('\r>>> Loading inter values of trace: {}'.format(i))
+            for k in range(0, 256):
+                inter_val_2_str = inter_val_2_file.readline().strip()
+                inter_val_2 = list(map(int, inter_val_2_str))
+                hw_mat[k][i] = calcHammingWeight(inter_val_2)
 
-        # corr_max = [[0]*1 for _ in range(256)]
-        # for k in range(0,256):
-        #     print('>>> Calulating correlation matrix of guessing key: {}'.format(k))
-        #     for j in range(0, sample_num):
-        #         corr_mat[k][j] = np.corrcoef(hw_mat[k], sample_mat[:,j])[0][1]
-        #     # print(np.mean(corr_mat[k]))
-        #     # plt.cla()
-        #     # plt.plot(corr_mat[k])
-        #     # plt.pause(0.01)
+        corr_max = [[0]*10 for _ in range(256)]
+        for k in range(0,256):
+            print('>>> Calulating correlation matrix of guessing key: {}'.format(k))
+            for j in range(0, sample_num):
+                corr_mat[k][j] = abs(np.corrcoef(hw_mat[k], sample_mat[:,j])[0][1])
 
-        #     corr_max[k] = heapq.nlargest(len(corr_max[0]), corr_mat[k])
-        #     corr_avg[k] = np.mean(corr_max[k])
-        #     print('--- {}: {}'.format(dec2hex(k), corr_avg[k]))
+            corr_max[k] = heapq.nlargest(len(corr_max[0]), corr_mat[k])
+            corr_avg[k] = np.mean(corr_max[k])
+            print('--- {}: {}'.format(dec2hex(k), corr_avg[k]))
 
         t2 = time.time()
         print('Time of processing: {} s'.format(t2-t1))
 
-        # plt.plot(corr_avg)
-        # plt.show()
+        plt.plot(corr_avg)
+        plt.show()
 
-
-
-
-
+        inter_val_2_file.close()
