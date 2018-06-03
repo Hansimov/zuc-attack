@@ -23,6 +23,7 @@
 
 %%==================================================
 
+% 子图
 
 % 双面打印
 % \documentclass[bache, openright, twoside]{sjtuthesis}
@@ -38,6 +39,7 @@
 %   submit      % 定稿提交的论文，插入签名扫描版的原创性声明、授权声明 
 % ]
 
+
 % 逐个导入参考文献数据库
 \addbibresource{bib/final.bib}
 % \addbibresource{bib/chap2.bib}
@@ -50,16 +52,16 @@
 
 \makeatletter
 \ifsjtu@submit\relax
-  \includepdf{pdf/original.pdf}
-  \cleardoublepage
-  \includepdf{pdf/authorization.pdf}
-  \cleardoublepage
+  % \includepdf{pdf/original.pdf}      % 原创性声明（图片）
+  % \cleardoublepage
+  % \includepdf{pdf/authorization.pdf} % 授权声明（图片）
+  % \cleardoublepage
 \else
 \ifsjtu@review\relax
 % exclude the original claim and authorization
 \else
-  \makeDeclareOriginal
-  \makeDeclareAuthorization
+  % \makeDeclareOriginal       % 原创性声明（文本）
+  % \makeDeclareAuthorization  % 授权声明  （文本）
 \fi
 \fi
 \makeatother
@@ -91,8 +93,7 @@
 \include{tex/01_crypto}    % 4k
 \include{tex/02_dpa}      % 4.5k
 \include{tex/03_zuc}      % 2.5k
-\include{tex/04_attack}   % 2k
-\include{tex/05_results}  % 2k
+\include{tex/04_results}  % 4k
 
 \appendix % 使用英文字母对附录编号
 

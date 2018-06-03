@@ -25,7 +25,7 @@ if __name__ == '__main__':
     t1 = time.time()
 
     with open(trs_file_name, 'rb') as trs_file:
-        trace_num = 10000
+        trace_num = 50000
 
         k_all = [[0]*8 for _ in range(256)]
         for k in range(0,256):

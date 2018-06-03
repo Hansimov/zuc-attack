@@ -2,13 +2,20 @@ import struct
 import time
 import math
 import numpy as np
-import matplotlib.pyplot as plt
 import heapq
+import matplotlib.pyplot as plt
+
+plt.rcParams['font.sans-serif'] = ['SimHei'] # 正常显示中文标签
+plt.rcParams['axes.unicode_minus'] = False   # 正常显示负号
+plt.rc('font', size=12)
 
 from convertType import *
 from binaryOperation import *
 from zucAlgo import linearTransform, sboxOfZuc, d
 from parseTrace import *
+
+
+
 
 trs_file_name = 'zuc_traces.trs'
 with open(trs_file_name, 'rb') as trs_file:
@@ -128,18 +135,11 @@ def calcHammingWeight(arr_in):
     return hw
 
 if __name__ == '__main__':
-    t1 = time.time()
-    trs_file_name = 'zuc_traces.trs'
 
-    with open(trs_file_name, 'rb') as trs_file:
-        # trs_info = readHeader(trs_file)
-        # header_end = trs_file.tell()
-
-# ---------------------------------------------------------------------- #
-# Finding positions of leakage
-
+# ------------------- Find positions of leakage ------------------- #
+    def findLeakage():
     # Reading traces
-        trace_num = 1000
+        trace_num = 20000
         sample_num = trs_info['ns'].val
         offset = 0
 
@@ -150,51 +150,81 @@ if __name__ == '__main__':
             # initvec_mat[i] = getTraceInitVector(trs_file, header_end, i)
             sample_mat[i] = getTraceSample(trs_file, header_end, i, sample_num, offset)
 
-        fig, ax1 = plt.subplots()
-        ax1.plot(sample_mat[i],'b')
-
     # Loading inter values and calculating hamming weights
-        key_index = hex2dec('AB') # correct k5 of inter_val_2
-        sample_mat = np.array(sample_mat)
         hw_mat_correct = [0] * trace_num
 
-        print('')
+        key_2_index = hex2dec('AB') # correct k5 of inter_val_2
         inter_val_2_file = open('inter_val_2.txt','r')
 
+        print('')
         for i in range(0, trace_num):
-            inter_val_2_file.seek((i*256 + key_index)*34)
+            inter_val_2_file.seek((i*256 + key_2_index)*34)
             inter_val_2_correct = inter_val_2_file.readline().strip()
             hw_mat_correct[i] = calcHammingWeight(inter_val_2_correct)
 
-    # Calculating correlations of each point in samples
-        corr_mat = [0] * sample_num
-        for j in range(0, sample_num):
-            corr_mat[j] = abs(np.corrcoef(hw_mat_correct, sample_mat[:,j])[0][1])
+        # key_1_index = hex2dec('23') # correct k9 of inter_val_1
+        # inter_val_1_file = open('inter_val_1.txt','r')
+
+        # print('')
+        # for i in range(0, trace_num):
+        #     inter_val_1_file.seek((i*256 + key_1_index)*34)
+        #     inter_val_1_correct = inter_val_1_file.readline().strip()
+        #     hw_mat_correct[i] = calcHammingWeight(inter_val_1_correct)
+
+        sample_mat = np.array(sample_mat)
+        hw_mat_correct = np.array(hw_mat_correct)
+
+    # Calculating correlations of each point in samples and plot them
+
+        # plt.figure(figsize=(18,6), dpi=80)
+        fig, ax1 = plt.subplots(figsize=(14,5), dpi=100)
+        plt.xlabel('时间')
+        # curve1 = ax1.plot(sample_mat[0], label='Power of trace', color='b')
+        curve1 = ax1.plot(sample_mat[0], label='功耗曲线', color='b')
+        ax1.set_ylabel('功耗')
+        # ax1.yaxis.labelpad = 10
 
         ax2 = ax1.twinx()
-        ax2.plot(corr_mat,'r')
+        for n in [100, 200, 500, 1000, 2000, 5000, 10000, 20000]:
+        # for n in [100, 200, 500]:
+        # for n in [trace_num]:
+            corr_mat = [0] * sample_num
+            for j in range(0, sample_num):
+                corr_mat[j] = abs(np.corrcoef(hw_mat_correct[0:n], sample_mat[0:n,j])[0][1])
+            ax2.cla()
+            ax2.set_ylabel('相关系数（绝对值）')
+            ax2.yaxis.labelpad = 10
+            # curve2 = ax2.plot(corr_mat, label='Correlation coefficients', color='r')
+            curve2 = ax2.plot(corr_mat, label='相关系数（绝对值）', color='r')
+            
+            curves = curve1 + curve2
+            labels = [curve.get_label() for curve in curves]
+            
+            ax2.legend(curves, labels, loc=1)
+
+            # image_name = './report/images/leakage_{}.png'.format(n)
+            # print('Outputing {}'.format(image_name))
+            # plt.savefig(image_name)
 
         t2 = time.time()
         print('Time of processing: {} s'.format(t2-t1))
 
         plt.show()
 
+# ------------------- Attack traces by guessing didffent keys ------------------- #
 
-'''
-
-# ---------------------------------------------------------------------- #
-# Reading traces
-
-        trace_num = 1500
+    def attackTraces():
+    # Reading traces
+        trace_num = 100
 
         # sample_num = trs_info['ns'].val
         # sample_num = 600
         # sample_num = 1
-        sample_num = 800
+        sample_num = 10
 
         # offset = 1640
         # offset = 1200
-        offset = 900
+        offset = 1315
 
         # initvec_mat = [[]]*trace_num
         sample_mat = [[]]*trace_num
@@ -212,19 +242,14 @@ if __name__ == '__main__':
         # plt.show()
 
 
-        sample_mat = np.array(sample_mat)
-
-        corr_mat     = [ [0]*sample_num for _ in range(256)]
-        corr_avg     = [0]*256
         # inter_val_mat = [ [0]*trace_num for _ in range(256)]
 
         hw_mat = [[0]*trace_num for _ in range(256)]
 
 
-# Loading inter values
+    # Loading inter values
 
         print('')
-        # inter_val_1_file = open('inter_val_1.txt','r')
         inter_val_2_file = open('inter_val_2.txt','r')
 
         for i in range(0, trace_num):
@@ -234,25 +259,155 @@ if __name__ == '__main__':
                 inter_val_2 = list(map(int, inter_val_2_str))
                 hw_mat[k][i] = calcHammingWeight(inter_val_2)
 
+        inter_val_2_file.close()
 
-# Calculating correlation matrix of guessing key
+        # inter_val_1_file = open('inter_val_1.txt','r')
+
+        # for i in range(0, trace_num):
+        #     sys.stdout.write('\r>>> Loading inter values of trace: {}'.format(i))
+        #     for k in range(0, 256):
+        #         inter_val_1_str = inter_val_1_file.readline().strip()
+        #         inter_val_1 = list(map(int, inter_val_1_str))
+        #         hw_mat[k][i] = calcHammingWeight(inter_val_1)
+
+        # inter_val_1_file.close()
+
+    # Calculating correlation matrix of guessing key
         print('')
-        corr_max = [[0]*5 for _ in range(256)]
-        for k in range(0,256):
-            print('>>> Calulating correlation matrix of guessing key: {}'.format(k))
-            for j in range(0, sample_num):
-                corr_mat[k][j] = abs(np.corrcoef(hw_mat[k], sample_mat[:,j])[0][1])
 
-            corr_max[k] = heapq.nlargest(len(corr_max[0]), corr_mat[k])
-            corr_avg[k] = np.mean(corr_max[k])
-            print('--- {}: {}'.format(dec2hex(k), corr_avg[k]))
+        sample_mat = np.array(sample_mat)
+        hw_mat = np.array(hw_mat)
+
+
+    # # 1.1 Plot changes of correlations of different keys with increasing number of traces
+
+    #     trace_num_step = 100
+    #     # trace_num_list = np.arange(99, 20000, 100)
+    #     trace_num_list = np.arange(trace_num_step, trace_num+1, trace_num_step)
+
+    #     corr_mat     = [ [0]*sample_num for _ in range(256)]
+    #     corr_avg_mat = [[0]*len(trace_num_list) for _ in range(256)]
+
+    #     nn = 0
+    #     for n in trace_num_list:
+    #         corr_maxn = [[0]*5 for _ in range(256)]
+    #         sys.stdout.write('\rNumber of traces: {}'.format(n))
+    #         for k in range(0,256):
+    #             # print('>>> Calulating correlation matrix of guessing key: {}'.format(k))
+    #             for j in range(0, sample_num):
+    #                 corr_mat[k][j] = abs(np.corrcoef(hw_mat[k][0:n-1], sample_mat[0:n-1,j])[0][1])
+
+    #             corr_maxn[k] = heapq.nlargest(len(corr_maxn[0]), corr_mat[k])
+    #             corr_avg_mat[k][nn] = np.mean(corr_maxn[k])
+    #         nn += 1
+
+    #     fig, ax = plt.subplots(figsize=(10, 5), dpi=100)
+
+    #     for k in range(0, 256):
+    #         ax.plot(trace_num_list, corr_avg_mat[k])
+
+    #     ax.set_xlabel('使用的功耗曲线条数')
+    #     ax.set_ylabel('相关系数（绝对值）')
+    #     ax.xaxis.labelpad = 10
+    #     ax.yaxis.labelpad = 10
+
+    #     t2 = time.time()
+    #     print('Time of processing: {} s'.format(t2-t1))
+    #     image_name = './report/images/keyrank_{}_{}.png'.format(trace_num_list[-1], trace_num_step)
+    #     print('Outputing {}'.format(image_name))
+    #     plt.savefig(image_name)
+
+    #     plt.show()
+
+    # # 1.2 Plot mean correlations of different keys
+
+    #     corr_mat     = [ [0]*sample_num for _ in range(256)]
+    #     corr_avg     = [0]*256
+
+    #     fig, ax = plt.subplots(figsize=(10, 5), dpi=100)
+
+    #     for n in [100, 200, 500, 1000, 2000, 5000, 10000, 20000]:
+    #     # for n in [100, 200]:
+    #         corr_maxn = [[0]*5 for _ in range(256)]
+
+    #         for k in range(0,256):
+    #             # print('>>> Calulating correlation matrix of guessing key: {}'.format(k))
+    #             for j in range(0, sample_num):
+    #                 corr_mat[k][j] = abs(np.corrcoef(hw_mat[k][0:n], sample_mat[0:n,j])[0][1])
+
+    #             corr_maxn[k] = heapq.nlargest(len(corr_maxn[0]), corr_mat[k])
+    #             corr_avg[k] = np.mean(corr_maxn[k])
+    #             print('--- Key {:03} {}: {:.6}'.format(k, dec2hex(k), corr_avg[k]))
+
+    #         t2 = time.time()
+    #         print('Time of processing: {} s'.format(t2-t1))
+
+    #         ax.cla()
+    #         ax.set_xlabel('猜测的密钥（十进制）')
+    #         ax.set_ylabel('相关系数（绝对值）')
+    #         ax.xaxis.labelpad = 10
+    #         ax.yaxis.labelpad = 10
+    #         ax.plot(range(0, 256), corr_avg, color='r')
+
+    #         corr_max = max(corr_avg)
+    #         key_max = corr_avg.index(corr_max)
+
+    #         ax.vlines(x=key_max, ymin=0, ymax=corr_max, color='g', linestyle='--')
+    #         x_ticks = np.append(ax.get_xticks(), key_max)
+    #         ax.set_xticks(x_ticks)
+
+    #         ax.get_xticklabels()[-1].set_color('g')
+
+    #         ax.set_xlim([0, 255])
+    #         ax.set_ylim([0, ax.get_ylim()[1]])
+
+    #         # image_name = './report/images/keyguess_{}.png'.format(n)
+    #         # print('Outputing {}'.format(image_name))
+    #         # plt.savefig(image_name)
+
+    #     plt.show()
+
+# ------------------- Plot traces ------------------- #
+    def plotTraces():
+
+        sample_num = trs_info['ns'].val
+        offset = 0
+
+        sample_row = [0]*sample_num
+
+        fig, ax = plt.subplots(figsize=(14, 5), dpi=100)
+
+        trace_index_list = [1, 20, 200, 2000, 20000]
+        # trace_index_list = [0]
+        for i in trace_index_list:
+            sys.stdout.write('\r>>> Reading trace: {}'.format(i))
+            # initvec_mat[i] = getTraceInitVector(trs_file, header_end, i)
+            sample_row = getTraceSample(trs_file, header_end, i-1, sample_num, offset)
+            
+            ax.cla()
+
+            ax.set_xlabel('时间')
+            ax.set_ylabel('功耗')
+
+            ax.plot(sample_row, color='b')
+            plt.title('曲线 - {:0>5}'.format(i), y=1.05)
+
+            print('')
+            image_name = './report/images/trace_{}.png'.format(i)
+            print('Outputing {}'.format(image_name))
+            plt.savefig(image_name)
 
         t2 = time.time()
         print('Time of processing: {} s'.format(t2-t1))
 
-        plt.plot(corr_avg)
         plt.show()
 
-        inter_val_2_file.close()
+# -------------------------------------------------------------------- #
+    t1 = time.time()
+    trs_file_name = 'zuc_traces.trs'
 
-'''
+    with open(trs_file_name, 'rb') as trs_file:
+        # findLeakage()
+        # attackTraces()
+        plotTraces()
+
