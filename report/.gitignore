@@ -8,4 +8,7 @@
 *.xml
 *.out
 *.zip
+*.pdf
+*.html
+!final.pdf
 SJTUThesis-master/

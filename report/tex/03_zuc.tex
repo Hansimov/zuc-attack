@@ -3,10 +3,9 @@
 %% 03_zuc.tex % 2.5k
 %%==================================================
 
-\chapter{祖冲之算法}
-通常的差分功耗分析都是以分组密码作为研究对象的，而本文则以祖冲之密码算法为例来说明，差分功耗分析一样可以攻击序列密码算法。
+\chapter{ZUC 算法的软硬件实现以及攻击方案}
 
-在实施攻击之前，攻击者一定要对算法本身有充分地研究，这样才能找到可能泄露信息的地方，并加以利用。这一章我们将介绍祖冲之算法的详细知识，试图从算法的流程中寻找可以攻击的位置。
+\label{chap:zuc}
 
 \section{算法背景} % 0.5k
 % 《3GPP LTE 国际加密标准 ZUC 算法》
@@ -39,7 +38,7 @@ ZUC 算法的运行过程如下：\cite{zuc_standard}
 
 \vspace*{\baselineskip}
 
-由于密码本身相对比较复杂，尽管我已经在硬件和软件上都实现 ZUC 算法，并且验证了实现的正确性，然而想要解释清楚一些实现中具体的细节，还是太过冗长了，而且毫无必要，因此这里只是粗略地介绍了一下算法的基本组成部分和大致流程。如果想要了解关于算法的更多信息，可以参考文献\parencite{zuc_standard}。
+由于密码本身相对比较复杂，尽管我已经在硬件和软件上都实现 ZUC 算法，并且验证了实现的正确性，然而想要解释清楚一些实现中具体的细节，还是太过冗长了，而且毫无必要，因此这里只是粗略地介绍了一下算法的基本组成部分和大致流程。如果想要了解关于算法的更多信息，可以参考文献 \parencite{zuc_standard}。
 
 作为攻击者和研究人员，了解算法的全部细节和设计理由固然重要，但是更加重要的是找到算法在实际实现中可能存在的问题。设计者和攻击者考虑问题的角度是不一样的，设计者往往拥有更好的大局观，但在细节上往往无法挖掘太深，而攻击者只需要撬动整个系统中的某一点就足以达成目标了。
 
@@ -52,15 +51,45 @@ ZUC 算法的运行过程如下：\cite{zuc_standard}
 \begin{figure}[htbp]
     \centering
     \includegraphics[height=.5\textheight]{../images/zuc_algo.png}
-    \caption{ZUC 算法的流程图\cite{zuc_standard}}
+    \caption{ZUC 算法的流程图 \cite{zuc_standard}}
     \label{fig:zuc_algo}
 \end{figure}
 
 
-\section{对 ZUC 算法的差分功耗攻击} % 1k
+\section{算法的软硬件实现}
+
+硬件设计使用的软件是 ISE 14.3，使用的 FPGA 型号为：XC6SLX75-2CSG484。在完成硬件设计、仿真和综合后，在实际环境中运行 ZUC 算法，并采集功耗曲线，用于后续的分析
+
+软件实现使用的语言为 Python 3.6，运行平台为 Windows 10。软件部分的作用是在功耗分析过程中计算中间值以及对应的假设功耗值，并进行相关系数攻击和更多的处理。软件代码开源在本人的 GitHub 仓库中：https://github.com/Hansimov/zuc-attack。
+
+\newpage
+
+硬件电路的输入和输出端口如图 \ref{fig:circuit_io} 所示。
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[height=.6\textheight]{../images/circuit_io.png}
+    \caption{硬件电路的输入和输出端口}
+    \label{fig:circuit_io}
+\end{figure}
+
+\newpage
+
+硬件电路的内部结构如图 \ref{fig:circuit_more} 所示。
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[height=.6\textheight]{../images/circuit_more.png}
+    \caption{硬件电路的内部结构}
+    \label{fig:circuit_more}
+\end{figure}
+
+\newpage
+
+\section{对 ZUC 算法的差分功耗分析方案} % 1k
 \label{sec:zuc_attack}
 
-小节 \ref{sec:dpa} 阐述了差分功耗攻击的基本方法，而本小节将把这个方法应用到具体的算法上。
+小节 \ref{sec:dpa}阐述了差分功耗攻击的基本方法，而本小节将把这个方法应用到具体的算法上。
 
 在 ZUC 算法中，唯一未知的信息就是初始密钥，其他的常量和明文都是已知的。因此我们的攻击目的就是得到密钥的信息。
 
@@ -101,11 +130,12 @@ ZUC 算法的运行过程如下：\cite{zuc_standard}
 
 这就是对 ZUC 算法进行功耗分析攻击的大致流程，我们将在下一小节展示相关的实验结果，并补充一些实现细节。
 
-\vspace*{\baselineskip}
+\section{本章小结}
 
-除了本文提到的攻击方法，针对 ZUC 算法还有一些其他的研究和实验：
+本章首先讨论了 ZUC 算法的提出背景，介绍了其和通信行业发展的密切联系，并且指出了该算法对我国的重要意义。
 
-文献 \parencite{zuc_freq} 研究了嵌入式平台下对 ZUC 算法实施频域攻击的方法，文献 \parencite{zuc_security} 和 \parencite{zuc_analyical} 从数学上提出了减少密钥猜测搜索空间的方法，文献 \parencite{zuc_iv} 和 \parencite{zuc_wu}改进了传统的功耗分析方法，通过选择初始向量来提高攻击的效率，文献 \parencite{zuc_guess} 尝试了对 ZUC 等流密码算法实施猜测决定攻击，文献 \parencite{stream_fischer} 和 \parencite{stream_gu} 则讨论了针对更一般的流密码算法的攻击。
+然后我们讨论了 ZUC 算法的流程和结构，分别介绍了 ZUC 算法的三个部分，包括线性移位反馈寄存器、比特重组和非线性函数，并且讲解了初始化和工作的运行过程。
 
+接着我们展示了 ZUC 算法的软硬件实现情况，给出了硬件电路的原理图，以及软件部分的开源代码，并且介绍了硬件和软件各自的用途。
 
-
+最后我们讨论了针对 ZUC 算法的差分功耗分析方案，除了介绍了传统的差分功耗分析的流程，还依据相关资料选取了有效的中间值，并且解释了这样选取的具体原因。
