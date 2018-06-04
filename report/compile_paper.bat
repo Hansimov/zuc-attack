@@ -1,4 +1,4 @@
 xelatex final
-bibtex final
+biber final
 xelatex final
 xelatex final

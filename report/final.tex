@@ -39,10 +39,13 @@
 %   submit      % 定稿提交的论文，插入签名扫描版的原创性声明、授权声明 
 % ]
 
+\usepackage{url}
+\urlstyle{same}
 
 % 逐个导入参考文献数据库
 \addbibresource{bib/final.bib}
-% \addbibresource{bib/chap2.bib}
+% \bibliographystyle{plain}
+% \bibliography{bib/final.bib}
 
 \begin{document}
 
@@ -90,6 +93,7 @@
 % \include{tex/faq}
 % \include{tex/summary}
 % \include{file}
+\include{tex/00_intro}
 \include{tex/01_crypto}    % 4k
 \include{tex/02_dpa}      % 4.5k
 \include{tex/03_zuc}      % 2.5k
@@ -111,8 +115,11 @@
 % 
 % 3GPP LTE 国际加密标准 ZUC 算法
 % 能量分析攻击
-% Differential Power Analysis on ZUC Algorithm
+% Power Analysis Attacks
+% 祖冲之序列密码算法(GM/T 0001-2012)
+% Differential Power Analysis on ZUC Algorithm (Tang Ming)
 % 祖冲之算法的国际标准化进展和终端一致性测试
+% Side-Channel Attacks: Ten Years After Its Publication and the Impacts on Cryptographic Module Security Testing
 
 
 % 致谢、发表论文、申请专利、参与项目、简历

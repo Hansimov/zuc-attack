@@ -9,7 +9,7 @@
 
 在传统的旁路攻击中，分组密码是主要的研究对象，这方面的研究成果也较多。由于序列密码（也称为流密码）算法中的加密变换随时间变化，因此，相比分组密码，找到序列密码中密钥和设备功耗之间的对应关系相对困难，所以针对序列密码算法的功耗分析研究相对较少。
 
-本文以祖冲之算法作为序列密码算法的典型，力图将传统的分组密码功耗分析方法应用于序列密码算法，并借此表明序列密码算法同样无法抵御功耗分析攻击，并试图提出一些可行的防护方案以提升祖冲之算法的安全性。
+本文以祖冲之算法作为序列密码算法的典型，力图将传统的分组密码功耗分析方法应用于序列密码算法，借此表明序列密码算法同样无法抵御功耗分析攻击，并总结出一套系统的模型建立和数据处理的流程和方法。
 
 \keywords{\large 旁路攻击 \quad 差分功耗分析 \quad 祖冲之算法}
 \end{abstract}
@@ -19,7 +19,7 @@ Researchers have paid a lot of attentions to the security of cryptographic devic
 
 In traditional side-channel attacks, block cipher algorithms are the main objects of study and researchers have a lot of achievements on them. Compared to block cipher algorithms, it is harder for stream cipher algorithms to find the relations between the power of devices and the cipher key of the algorithm for because of the time-variant transformations during encryptions. This leads to less studies on the power analysis of stream cipher algorithms.
 
-This paper studies the technologies used in traditional power analysis of block cipher algorithms, and applies them to stream cipher algorithms. We take the ZUC algorithm as a typical case. The results indicate that stream cipher algorithms are also vulnerable to power analysis attacks and we try to provide some practical protection methods to improve the security of the ZUC algorithm.
+This paper studies the technologies used in traditional power analysis of block cipher algorithms, and applies them to stream cipher algorithms. We take the ZUC algorithm as a typical case. The results indicate that stream cipher algorithms are also vulnerable to power analysis attacks. We will build a general process of modeling and data analysis through the experiments.
 
 \englishkeywords{\large side-channel attack, differential power analysis, ZUC algorithm}
 \end{englishabstract}
