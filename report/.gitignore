@@ -9,6 +9,6 @@
 *.out
 *.zip
 *.pdf
-*.html
+*.htm
 !final.pdf
 SJTUThesis-master/

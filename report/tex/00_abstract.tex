@@ -11,7 +11,9 @@
 
 本文以祖冲之算法作为序列密码算法的典型，力图将传统的分组密码功耗分析方法应用于序列密码算法，借此表明序列密码算法同样无法抵御功耗分析攻击，并总结出一套系统的模型建立和数据处理的流程和方法。
 
-\keywords{\large 旁路攻击 \quad 差分功耗分析 \quad 祖冲之算法}
+实验结果显示，通常用于攻击分组密码的差分功耗分析方法也同样适用于祖冲之算法这样的序列密码算法，并且攻击的流程和框架也都基本相同。实验实现了算法的硬件电路和软件代码，成功地攻击出了相关的密钥字节，并且详细分析了算法电路信息泄露的位置，对相关实验结果给出了可能的原因和合理的解释。
+
+\keywords{\large 密码学 \quad 数字电路 \quad 旁路攻击 \quad 差分功耗分析 \quad 祖冲之算法}
 \end{abstract}
 
 \begin{englishabstract}
@@ -21,6 +23,8 @@ In traditional side-channel attacks, block cipher algorithms are the main object
 
 This paper studies the technologies used in traditional power analysis of block cipher algorithms, and applies them to stream cipher algorithms. We take the ZUC algorithm as a typical case. The results indicate that stream cipher algorithms are also vulnerable to power analysis attacks. We will build a general process of modeling and data analysis through the experiments.
 
-\englishkeywords{\large side-channel attack, differential power analysis, ZUC algorithm}
+The experimental results show that the differential power analysis method, which is usually used to attack the block ciphers, also applies to the sequence cipher algorithms such as the ZUC algorithm, and the process and framework of the attack are basically the same. The experiment implements the hardware curcuits and software codes of the algorithm, successfully attacks the related key bytes, and analyzes the location of the information leakage of the algorithm circuit in detail. We also give the possible reasons and reasonable explanations for the related experimental results.
+
+\englishkeywords{\large cryptography, digital circuits, side-channel attack, differential power analysis, ZUC algorithm}
 \end{englishabstract}
 

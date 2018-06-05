@@ -1,6 +1,5 @@
 *.trs
 *.rar
-*.cfg
 *.txt
 output.nb
 __pycache__/
