@@ -2,8 +2,7 @@
 \begin{bigabstract} % 8k
 This paper studies the technologies used in traditional power analysis of block cipher algorithms and applies them to a famous stream cipher algorithm --- ZUC algorithm. The results of our experiments indicate that ZUC algorithm is also vulnerable to power analysis attacks.
 
-% Chapter 2 - 2k
-In chapter 2, we introduce the basic knowledge of modern cryptography, cryptographic devices and side-channel attacks. 
+We introduce the basic knowledge of modern cryptography, cryptographic devices and side-channel attacks. 
 
 Modern cryptography is based on rigorous mathematical conclusions and provements, so its security is improved a lot compared to traditional cryptography. One famous principle in modern cryptography is Kerckhoff's principle. The principle suggests that the cipher algorithms should be open and evaluated by the public. This principle breaks people's prejudices on the confidentiality of cipher algorithms and it is proved to be true as time goes on. So the famous cipher algorithms are harder to attack and break with traditional methods of cryptanalysis.
 
@@ -13,8 +12,8 @@ Since side-channel attacks have large threats to the security of the real-world 
 
 And one important part of side-channel attacks is the real-world circuits and devices. It is necessary to learn about the design and manufacture of physical devices. The basic elements of cryptographic devices are digital integrated circuits. So the researchers should not only be good at mathematics, but also have a good understanding on microelectronics. This is why side-channel attacks can do some things that traditional cryptanalysis cannot do --- knowledge of different areas is applied.
 
-% Chapter 3 - 3k
-In chapter 3, we discuss the power analysis attacks, and one technique of this kind is differential power analysis, the abbreviation for which is DPA. 
+
+We discuss the power analysis attacks, and one technique of this kind is differential power analysis, the abbreviation for which is DPA. 
 
 Before attacking the devices with power analysis, we must learn that in the circuits, what is consuming power. The power consumption of logic components is usually divided into static power and dynamic power consumption.
 
@@ -32,8 +31,8 @@ Differential power analysis requires a large number of power traces. The benefit
 
 The general process of differential power analysis includes the following steps. Firstly, select the appropriate location of the intermediate value of the algorithm; secondly, collect the actual power consumption curve of the device; thirdly, calculate the theoretical intermediate value according to the algorithm and use the appropriate power model to convert the theoretical middle value to the hypothesis of power consumption; finally, analyze the assumption of the power and the actual power curve, and dig the information needed.
 
-% Chapter 4 - 1k
-In chapter 4, we talk about the ZUC algorithm and propose a scheme to attack it with differential power analysis.
+
+We talk about the ZUC algorithm and propose a scheme to attack it with differential power analysis.
 
 Zu Chongzhi algorithm, also known as ZUC algorithm, is the first international commercial standard cipher algorithm proposed by our country. The proposed ZUC algorithm has made our country have more autonomy in the field of international commercial cryptography, which not only embodies the academic ability of our country in the field of cryptography, but also is an important step for our country to participate in the formulation of international communication standards. Therefore, the study of ZUC algorithm has high practical significance.
 
@@ -43,8 +42,7 @@ As an attacker and researcher, it is important to know all the details of the al
 
 In the ZUC algorithm, the only unknown information is the initial key, and the other constants and plaintexts are known. Therefore, the purpose of our attack is to get the key information. We choose the output of the right half of the nonlinear function in the first round of the initialization phase as the intermediate value, and try to attack the value of fifth byte of the original keys.
 
-% Chapter 5 - 2k
-In chapter 5, we apply the differential power analysis attack to a real-world device and the results indicate that ZUC algorithm is vulnerable to differential power analysis.
+We apply the differential power analysis attack to a real-world device and the results indicate that ZUC algorithm is vulnerable to differential power analysis.
 
 When the number of power consumption curves used by the attack is small, the result is less reliable, and the best key byte guess is not stable enough. Therefore, it is necessary to test the stability of guessing results when attacking. The method of selection is to use more power curves.
 
@@ -56,7 +54,6 @@ With the increase of the number of power curve, the maximum of relative correlat
 
 This is because, although there is a certain relationship between the assumption of the power value (based on the theoretical median and the power model calculated) and the actual power consumption, this connection is not necessarily strongly positive correlation. Therefore, when the number of power consumption curves used by the attack is large, it is assumed that the proportion of the uncorrelated parts between the power consumption value and the actual power consumption will increase.
 
-% Conclusion
 In conclusion, we prove that the power analysis is effective and powerful to attack the ZUC algorithm. We have developped a general process of problem modeling and data analysis. The experience can also be applied to other stream cipher algorithms and that is the most important result.
 
 \end{bigabstract}
