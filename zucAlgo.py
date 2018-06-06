@@ -143,7 +143,7 @@ def bitReorganization():
 
 def zucInit():
     global k_hex, k, v_hex, v, d, s, r1, r2, x, w
-    for i in range(0,32):
+    for i in range(0, 32):
         print('zucInit(): {}'.format(i))
         # print(list(map(binvec2hex, [x[0], x[1], x[2],x[3], r1, r2, binaryXor(x[3],w), s[15]])))
         bitReorganization()

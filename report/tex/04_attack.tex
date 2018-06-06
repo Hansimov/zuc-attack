@@ -35,15 +35,215 @@
     \label{fig:dpa}
 \end{figure}
 
-\section{对 ZUC 算法实施差分功耗分析攻击}
+\section{寻找 ZUC 算法的中间值}
 
-在 ZUC 算法中，唯一未知的信息就是初始密钥，其他的常量和明文都是已知的。因此我们的攻击目的就是得到密钥的信息。
+在进行软件分析之前，我们首先要在硬件上实现 ZUC 算法电路，并采集其运行时的功耗。这部分相对简单，我们已经在 \ref{sec:hardware} 节中实现了硬件电路，而采集功耗的过程也很容易，因此这里不再赘述。
 
-差分功耗攻击最核心的思想是，假设功耗值和实际功耗值之间是有关联的。而要想假设功耗值尽可能贴合实际功耗值，就需要选择合适的中间值，采用合适的功耗模型。一般而言，中间值通常选择算法中非线性变换的部分，因为如果输入稍有不同，非线性变换的输出就会出现较大的差异，因此，正确的输入和错误的输入产生的差异将比线性变换更加明显，就可以有效地区分出正确的输入和错误的输入。功耗模型通常选择汉明重量模型或者比特模型，为了方便，我们这里采用汉明重量模型。
+在 ZUC 算法中，唯一未知的信息就是初始的种子密钥，其他的常量和明文都是已知的。因此我们的攻击目的就是得到密钥的信息，也就是种子密钥的各个字节。
 
-\vspace*{0.5\baselineskip}
+差分功耗攻击最核心的思想是，假设功耗值和实际功耗值之间是有关联的。而要想假设功耗值尽可能贴合实际功耗值，就需要选择合适的中间值。
 
-差分功耗分析的第一步是要在硬件上实现 ZUC 算法电路，然后采集其运行时的功耗。这部分和针对其他算法的差分功耗分析没有什么差别，因此不再详细说明。我们重点关注分析 ZUC 算法中的特别之处。
+一般而言，中间值通常选择算法中非线性变换的部分，因为如果输入稍有不同，非线性变换的输出就会出现较大的差异，从而正确的输入和错误的输入产生的差异将比线性变换更加明显，就可以有效地区分出正确的输入和错误的输入。
+
+因此，我们第一步想到的是，把目光放在 ZUC 算法的非线性函数模块，看看能否从这个模块的附近找到合适的中间值。
+
+由于 ZUC 算法是分成三层的，第三层的非线性函数模块的输入，取决于第一层的线性反馈移位寄存器模块和第二层的比特重组模块的输出，而上面两层都对算法中的变量作了很多操作和运算，比如移位、剪切、粘贴、比特加、比特异或、素域模加，这就导致不同密钥字节彼此间的关联度很高。
+
+密钥字节关联度很高的后果就是，我们很难对单个密钥字节进行猜测（只需要穷举 $2^8$ 种情况），这就导致我们必须穷举更多的情况（N 个密钥字节就对应 $2^{8 \times N}$ 中情况），一旦关联的密钥字节数较多，就几乎不可能对其穷举。
+
+所以我们的首要任务，就是找到算法中尽可能独立的密钥字节。换句话说，如果在某个时刻，非线性函数模块的输出只和单个密钥字节相关，那么这个密钥字节就具有极强的独立性，我们也只需要穷举 $2^8$ 种情况就能攻出这个密钥字节。
+
+我们需要对算法进行自顶向下地剖析，观察不同阶段哪些密钥字节参与了什么运算。
+
+我们从图 \ref{fig:zuc_algo} 中截取一部分，得到图 \ref{fig:zuc_lfsr_br}，该图展示了线性反馈移位寄存器模块的输出、比特重组模块的全部以及非线性函数模块的输入。
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.8\textwidth]{../images/zuc_lfsr_br.png}
+    \caption{线性反馈移位寄存器模块的输出、比特重组模块的全部以及非线性函数模块的输入}
+    \label{fig:zuc_lfsr_br}
+\end{figure}
+
+从图中可以看出，并不是任何时刻所有种子密钥字节都参与算法，以初始化阶段为例，每运行一次 {\cnsls zucInit} 函数，线性反馈移位寄存器输出到下一层只同 8 个寄存器字节变量相关。影响线性反馈移位寄存器输出的便是比特重组的输入，见代码 \ref{lst:bitreorganization}，我们这里将其再次写出来，方便参阅：
+
+\begin{lstlisting}[style=myPython]
+def bitReorganization():
+    global x, s
+    x[0] = s[15][0:16] + s[14][-16:]
+    x[1] = s[11][-16:] + s[9][0:16]
+    x[2] = s[7][-16:] + s[5][0:16]
+    x[3] = s[2][-16:] + s[0][0:16]
+\end{lstlisting}
+
+那么这里 {\cnsls s} 又和什么有关呢？在变量初始化的代码 \ref{lst:varsinit} 中，我们可以找到如下语句：
+
+\begin{lstlisting}[style=myPython]
+...
+
+def varsInit():
+    ...
+    for i in range(0, 16):
+        s[i] = k[i] + d[i] + v[i]
+    ...
+\end{lstlisting}
+
+也就是说，在 ZUC 算法中，线性反馈移位寄存器的每个 31 比特单元变量 {\cnsls s[i]} 是由种子密钥字节 {\cnsls k[i]}、给定的字符串常量单元 {\cnsls d[i]} 以及初始向量（输入的明文）字节 {\cnsls v[i]} 连接而成的。（可以参考表 \ref{table:symbol} 中各符号的说明。）
+
+那么我们就可以对输入比特重组模块的 8 个字节进行拆解，找到和其相关的密钥字节：
+
+\begin{lstlisting}[style=myPython]
+    x[0] = s[15][0:16] + s[14][-16:]
+         = (k[15][:] + d[15][0:8]) + (d[14][-8:] + v[14][:])
+
+    x[1] = s[11][-16:] + s[9][0:16]
+         = (d[11][-8:] + v[11][:]) + (k[9][:] + d[9][0:8])
+
+    x[2] = s[7][-16:] + s[5][0:16]
+         = (d[7][-8:] + v[7][:]) + (k[5][:] + d[5][0:8])
+
+    x[3] = s[2][-16:] + s[0][0:16]
+         = (d[2][-8:] + v[2][:]) + (k[0][:] + d[0][0:8])
+\end{lstlisting}
+
+这里提一句，在 Python 中，{\cnsls s[15][0:16]} 表示 {\cnsls s[15]} 的前 16 比特，也就是第 0 到 15 比特，而不是第 0 到 16 比特，相当于索引的区间是左闭右开。{\cnsls s[14][-16:]} 则表示 {\cnsls s[14]} 的末 16 比特，{\cnsls k[15][:]} 表示 {\cnsls k[15]} 的全部比特（8 位）。
+
+从拆解结果可以看到，相关的密钥字节有且仅有：{\cnsls k[15], k[9], k[5], k[0]}。
+
+那么，在非线性函数模块中，是不是这 4 个又都参与运算了呢？并不是。
+
+我们再截取图 \ref{fig:zuc_algo} 的另外一部分，得到图 \ref{fig:zuc_br_f}，稍作观察。
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.8\textwidth]{../images/zuc_br_f.png}
+    \caption{比特重组模块和非线性函数模块}
+    \label{fig:zuc_br_f}
+\end{figure}
+
+从图中的数据流向可以看出，{\cnsls x[0]} 和 {\cnsls x[3]} 并没有参与非线性函数模块的内部操作，而只是和记忆单元 {\cnsls r1} 和 {\cnsls r2} 作了简单的运算，用于输出密钥流。
+
+因此，真正参与非线性函数模块的内部操作的，只有 {\cnsls x[1]} 和 {\cnsls x[2]}，与之相关的密钥字节便是 {\cnsls k[9]} 和 {\cnsls k[5]}。
+
+下面我们再来看一下 {\cnsls k[9]} 和 {\cnsls k[5]} 又是如何参与非线性函数中的运算的。
+
+这里我们将非线性函数模块的代码 \ref{lst:nonlinearfunction} 重写一遍，方便查看：
+
+\begin{lstlisting}[style=myPython]
+def nonLinearFunction():
+    global w, x, r1, r2
+    w = binaryAdd(binaryXor(x[0], r1), r2)
+    w1 = binaryAdd(r1, x[1]) `\label{line:w1}`
+    w2 = binaryXor(r2, x[2]) `\label{line:w2}`
+    r1 = sboxOfZuc(linearTransform(w1[-16:]+w2[0:16], 1)) `\label{line:r1}`
+    r2 = sboxOfZuc(linearTransform(w2[-16:]+w1[0:16], 2)) `\label{line:r2}`
+\end{lstlisting}
+
+从第 \ref{line:r1} -- \ref{line:r2} 行可以看出，{\cnsls r1} 和 {\cnsls r1} 的值同 {\cnsls w1} 和 {\cnsls w2} 均相关，而 {\cnsls w1} 同 {\cnsls x[1]} 相关，{\cnsls w2} 同 {\cnsls x[2]} 相关。
+
+让我们将几个变量做一下拆解，以便更好地理清它们之间的关系：
+
+（我们用\ {\color{blue} $a \Leftarrow b$} 表示\ {\color{blue} $a$ 取决于 $b$}）
+
+\begin{lstlisting}[style=myPython]
+r1 `$\Leftarrow$` w1[-16:] + w2[0:16] 
+   `$\Leftarrow$` x[1][-16:] + x[2][0:16]
+   `$\Leftarrow$` (k[9][:] + d[9][0:8]) + (d[7][-8:] + v[7][:])
+
+r2 `$\Leftarrow$` w2[-16:] + w1[0:16]
+   `$\Leftarrow$` x[2][-16:] + x[1][0:16]
+   `$\Leftarrow$` (k[5][:] + d[5][0:8]) + (d[11][-8:] + v[11][:])
+\end{lstlisting}
+
+我们惊喜地发现：{\cnsls r1} 仅和密钥字节 {\cnsls k[9]} 相关，而 {\cnsls r2} 仅和密钥字节 {\cnsls k[5]} 相关！
+
+也就是说，如果将 {\cnsls r1} 或者 {\cnsls r2} 的输出作为中间值的话，我们就只需要猜测单个字节，也就是 $2^8$ 种情况，所花的代价非常小，可行性也非常高。
+
+然而，我们这里遗漏了两个细节。
+
+第一个遗漏的细节是，在非线性函数模块的代码的第 \ref{line:w1} -- \ref{line:w2} 行中，{\cnsls w1} 不仅取决于 {\cnsls x[1]}，还取决于{\cnsls r1}，同样地，{\cnsls w2} 不仅取决于 {\cnsls x[2]}，还取决于{\cnsls r2}。而 {\cnsls r1} 和 {\cnsls r2} 又是和上一轮非线性函数的结果相关的。
+
+这里就出现了一个问题：如果 {\cnsls r1} 和 {\cnsls r2} 和上一轮非线性函数的结果相关，而要想知道上一轮非线性函数的结果，又需要知道上一轮中相关密钥字节，可是密钥字节正是我们未知的信息。似乎陷入了一个死循环。
+
+经过思索，我们终于找到了问题的突破口：在第 1 轮算法初始化阶段 {\cnsls zucInit} 的非线性函数模块 {\cnsls nonLinearFunction} 中，{\cnsls r1} 和 {\cnsls r2} 的初始值是全 0。
+
+可以参考变量初始化的代码 \ref{lst:varsinit} 的这一段：
+
+\begin{lstlisting}[style=myPython]
+...
+
+def varsInit():
+    ...
+    r1 = [0] * 32
+    r2 = [0] * 32
+\end{lstlisting}
+
+这样，我们就可以将全 0 作为 {\cnsls r1} 和 {\cnsls r2} 的初始值，代入到第 1 轮 {\cnsls zucInit} 的 {\cnsls nonLinearFunction} 中计算中间值。
+
+换句话说，在 {\cnsls zucInit} 的第 1 轮中，除了密钥字节，其他的变量值都是已知的。这样，我们就可以计算出中间值，进行功耗分析，攻击出对应密钥字节，再将攻出来的字节代入到算法中，得到下一轮的相关值，这样就可以攻击出后续的密钥字节。
+
+然而事实并没有我们想象的这么简单，事实上，以 {\cnsls r1} 和 {\cnsls r2} 作为中间值，只能攻击 {\cnsls zucInit} 的前 5 轮。也就是说，通过这种方法可以攻击出来的密钥字节为：{\cnsls k[9], k[5]; k[10], k[6]; k[11], k[7]; k[12], k[8]; k[13](, k[9])}。（第 5 轮中攻出的 {\cnsls k[9]} 已经在第 1 轮攻出。）
+
+这是为什么呢？并且为什么是这几个密钥字节呢？
+
+这也就引出了第二个遗漏的细节：在 {\cnsls zucInit} 的每一轮中，线性反馈移位寄存器的寄存器单元变量都会向右平移一个单元。参见代码 \ref{lst:lfsr} 中的这一段：
+
+\begin{lstlisting}[style=myPython]
+def lfsrInit():
+    ...
+    for i in range(0,16):
+    s[i] = s[i+1]
+
+def lfsrWork():
+    ...
+    for i in range(0,16):
+    s[i] = s[i+1]
+\end{lstlisting}
+
+那么，我们之前所谈论的 {\cnsls k[9]} 和 {\cnsls k[5]} 只是线性反馈移位寄存器中对应位置（第 9 个记忆单元和第 5 个记忆单元）的密钥字节，而不是原始的 {\cnsls k[9]} 和 {\cnsls k[5]}，只有在 {\cnsls zucInit} 的第 1 轮 {\cnsls nonLinearFunction} 中，才是真正的 {\cnsls k[9]} 和 {\cnsls k[5]}。
+
+事实上，在 {\cnsls zucInit} 的第 N 轮 {\cnsls nonLinearFunction} 中，和 {\cnsls r1} 相关的应当是原始密钥字节中的 {\cnsls k[8+N]}，和  {\cnsls r2} 相关的应当是原始密钥字节中的 {\cnsls k[4+N]}。这也就是我们之前所列的，前 5 轮中可以攻出来的密钥字节的递推公式。
+
+这里我们就碰到了关键的问题，到第 6 轮时，第 1 轮中的 {\cnsls s[16]} 已经移动到了这里的 {\cnsls s[11]} 处。此时，如果想得到 {\cnsls r1} 的值，就必须知道 {\cnsls x[1]} 的值，而 {\cnsls x[1]} 的值是取决于 {\cnsls s[11]} 的，见代码 \ref{lst:bitreorganization} 的这一段：
+
+\begin{lstlisting}[style=myPython]
+def bitReorganization():
+    ...
+    x[1] = s[11][-16:] + s[9][0:16]
+    ...
+\end{lstlisting}
+
+问题的根源就在于此：第 6 轮中的 {\cnsls s[11]} 对应的是第 1 轮的 {\cnsls s[16]}，而 {\cnsls s[16]} 的计算过程牵扯到几个其他密钥字节，参见代码 \ref{lst:lfsr} 的这一段：
+
+\begin{lstlisting}[style=myPython]
+def lfsrInit():
+    global k_hex, k, v_hex, v, d, s, w
+    shift_bits_list  = [15, 17, 21, 20, 8, 0]
+    shift_index_list = [15, 13, 10, 4, 0, 0]
+    xv = [0] * 31
+    for i in range(0, len(shift_bits_list)):
+        s_i_shifted = circShiftLeft(s[shift_index_list[i]], shift_bits_list[i])
+        xv = modAdd_2e31m1(xv, s_i_shifted)
+    s[16] = modAdd_2e31m1(shiftLeft(w, -1), xv)
+    if s[16] == [0]*31:
+        s[16] = [1]*31
+    ...
+\end{lstlisting}
+
+因此，从 {\cnsls zucInit} 的第 6 轮开始，就不能再简单地用 {\cnsls r1} 和 {\cnsls r2} 作为中间值了。因为相关的密钥字节不再只有单个，而是多个，所需要猜测的可能大大增加。
+
+事实上，在 {\cnsls zucInit} 的第 6 轮中，需要穷举 4 个密钥字节： {\cnsls k[15], k[14], k[4], k[0]}。
+
+
+
+作为演示，我们这里就将 {\cnsls r2} 作为中间值，来攻击 {\cnsls k[5]}
+
+
+
+
+
+
+
+
 
 \vspace*{0.5\baselineskip}
 
@@ -54,18 +254,13 @@
     \includegraphics[height=.5\textheight]{../images/zuc_attack.png}
     \caption{非线性函数中左侧寄存器的输出仅和 k9 相关，右侧寄存器的输出仅和 k5 相关\cite{zuc_attack_tangming}}
     \label{fig:zuc_attack}
-
 \end{figure}
 
+我们来详细地讨论一下，是怎样得到这个中间值的
+
+
+
 因此，选择初始化阶段第一轮打乱操作中，非线性函数右半部分的输出作为我们的中间值，尝试攻击出 k5 的值。
-
-\vspace*{\baselineskip}
-
-
-% A lot to add !
-
-
-
 
 选择这个位置作为中间值有两个原因：
 

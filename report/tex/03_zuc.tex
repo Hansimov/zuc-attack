@@ -39,7 +39,7 @@ ZUC 算法的运行过程如下：\cite{zuc_standard}
 
 \vspace*{0.5\baselineskip}
 
-由于密码本身相对比较复杂，尽管我已经在硬件和软件上都实现 ZUC 算法，并且验证了实现的正确性，然而想要解释清楚一些实现中具体的细节，还是太过冗长了，而且毫无必要，因此这里只是粗略地介绍了一下算法的基本组成部分和大致流程。如果想要了解关于算法的更多信息，可以参考文献 \parencite{zuc_standard} 以及 \ref{sec:software} 节。
+由于密码本身相对比较复杂，这里只是粗略地介绍了一下算法的基本组成部分和大致流程。我们在 \ref{sec:software} 节将会讨论关于算法的更多细节，另外也可以参考文献 \parencite{zuc_standard}。
 
 作为攻击者和研究人员，了解算法的全部细节和设计理由固然重要，但是更加重要的是找到算法在实际实现中可能存在的问题。设计者和攻击者考虑问题的角度是不一样的，设计者往往拥有更好的大局观，但在细节上往往无法挖掘太深，而攻击者只需要撬动整个系统中的某一点就足以达成目标了。
 
@@ -58,9 +58,11 @@ ZUC 算法的运行过程如下：\cite{zuc_standard}
 
 
 \section{硬件实现}
+\label{sec:hardware}
 
 硬件设计使用的软件是 ISE 14.3，使用的 FPGA 型号为：XC6SLX75-2CSG484。在完成硬件设计、仿真和综合后，在实际环境中运行 ZUC 算法，并采集功耗曲线，用于后续的分析。
 
+这部分的代码实现和 \ref{sec:software} 节中所述的基本相同，但因为软件层面的代码可读性更强，因此我们将具体的实现细节留在 \ref{sec:software} 中详细阐述。
 
 \newpage
 
@@ -93,41 +95,41 @@ ZUC 算法的运行过程如下：\cite{zuc_standard}
 
 下面对软件实现的一些重要模块进行说明，作为对 \ref{sec:algoflow} 节的补充。
 
-
 \subsection{符号和函数说明}
 为了方便讨论，这里的符号基本保持和文献 \parencite{zuc_standard} 中的一致。
 
 \begin{table}[htbp]
 \caption{ZUC 算法中符号的说明}
-
-\begin{tabular}{rl}
-{\cnsls s[0] ,s[1], ..., s[15]} & 线性反馈移位寄存器的 16 个 31 比特寄存器单元变量 \\
-{\cnsls x[0], x[1], x[2], x[3]}  & 比特重组输出的 4 个 32 比特字 \\
-{\cnsls r1, r2} & 非线性函数 {\cnsls nonLinearFunction} 的 2 个 32 比特记忆单元变量 \\
-{\cnsls w} & 非线性函数 F 输出的 32 比特字 \\
-{\cnsls w1} & r1 与 x[1] 进行模 $2^32$ 加法运算输出的 32 比特字 \\
+\label{table:symbol}
+\begin{tabular}{R{0.35\textwidth} L{0.65\textwidth}}
+{\cnsls s[0] ,s[1], ..., s[15]} & 线性反馈移位寄存器模块的 16 个 31 比特寄存器单元变量 \\
+{\cnsls x[0], x[1], x[2], x[3]}  & 比特重组模块输出的 4 个 32 比特字 \\
+{\cnsls r1, r2} & 非线性函数模块中的 2 个 32 比特记忆单元变量 \\
+{\cnsls w} & 非线性函数模块输出的 32 比特字 \\
+{\cnsls w1} & r1 与 x[1] 进行模 $2^{32}$ 加法运算输出的 32 比特字 \\
 {\cnsls w2} & r2 与 x[2] 按比特位逐位异或运算输出的 32 比特字 \\
 {\cnsls z} & 算法每拍输出的 32 比特密钥字 \\
 {\cnsls k} & 初始种子密钥 \\
-{\cnsls v} & 初始向量 \\
-{\cnsls d[0], d[1], ..., d[15]}  & 16 个 15 比特的字符串常量 \\
+{\cnsls v} & 初始向量，可以视为输入的明文 \\
+{\cnsls d[0], d[1], ..., d[15]}  & 给定的 16 个 15 比特的字符串常量 \\
 \end{tabular}
 
 \end{table}
 
 \begin{table}[htbp]
 \caption{ZUC 算法中函数的说明}
-
-\begin{tabular}{rl}
+\label{table:function}
+\begin{tabular}{R{0.35\textwidth} L{0.65\textwidth}}
 {\cnsls lsfrInit} & 线性反馈移位寄存器模块的初始化模式 \\
 {\cnsls lfsrWork} & 线性反馈移位寄存器模块的工作模式 \\
 {\cnsls nonLinearFunction} & 非线性函数模块 \\
 {\cnsls linearTransform} & 非线性函数模块中的线性变换函数 \\
 {\cnsls sboxOfZuc} & 非线性函数模块中的 S 盒置换函数 \\
 {\cnsls bitReorganization} & 比特重组模块 \\
-{\cnsls varsInit} & 变量初始化 \\
+{\cnsls varsInit} & 所有变量初始化 \\
 {\cnsls zucInit} & 算法运行的初始化阶段 \\
 {\cnsls zucWork} & 算法运行的工作阶段 \\
+{\cnsls outputkey} & 密钥输出 \\
 \end{tabular}
 
 \end{table}
@@ -135,7 +137,11 @@ ZUC 算法的运行过程如下：\cite{zuc_standard}
 
 \subsection{三层模块}
 
-线性反馈移位寄存器拥有两个模式，分别是初始化模式和工作模式，二者唯一的区别在于\ {\cnsls s[16]} 的赋值方式。
+\subsubsection{线性反馈移位寄存器模块}
+
+线性反馈移位寄存器模块拥有两个模式，分别是初始化模式和工作模式，二者唯一的区别在于\ {\cnsls s[16]} 的赋值方式。其中用到了素域上的模 $2^{31}-1$ 加法，需要具备一些抽象代数的基础知识。这部分的主要操作就是不断打乱和混淆寄存器中存储的变量。
+
+该模块中的素域 $GF(2^{31}-1)$ 上的本原序列可以视为二元域 $GF(2)$ 上的非线性序列，具备一系列优点，比如线性复杂度高、随机性强、权位序列平移等价以及可以一定程度上抵抗现有的基于二元域的密码分析（区分攻击、相关攻击和代数攻击）。 \cite{zuc_feng}
 
 \begin{lstlisting}[style=myPython,label={lst:lfsr},caption={线性反馈移位寄存器的初始化模式和工作模式}]
 def lfsrInit():
@@ -154,7 +160,7 @@ def lfsrInit():
 
 def lfsrWork():
     global k_hex, k, v_hex, v, d, s
-    shift_bits_list = [15, 17, 21, 20, 8, 0]
+    shift_bits_list =  [15, 17, 21, 20, 8, 0]
     shift_index_list = [15, 13, 10, 4, 0, 0]
     xv = [0] * 31
     for i in range(0, len(shift_bits_list)):
@@ -167,8 +173,26 @@ def lfsrWork():
         s[i] = s[i+1]
 \end{lstlisting}
 
+\subsubsection{比特重组模块}
 
-非线性函数模块：
+比特重组模块的实现最为简单，其操作基本就是字符串的剪切和粘贴，建立起了上一层线性反馈移位寄存器和下一层非线性函数之间的桥梁。
+
+简单的设计使这一模块便于在软硬件上实现，其作用是改变线性反馈移位寄存器部分的线性结构，并且加强对素域 $GF(2^{31}-1)$ 上密码分析的防御能力。 \cite{zuc_feng}
+
+\begin{lstlisting}[style=myPython,label={lst:bitreorganization},caption={比特重组}]
+def bitReorganization():
+    global x, s
+    x[0] = s[15][0:16] + s[14][-16:]
+    x[1] = s[11][-16:] + s[9][0:16]
+    x[2] = s[7][-16:] + s[5][0:16]
+    x[3] = s[2][-16:] + s[0][0:16]
+\end{lstlisting}
+
+
+\subsubsection{非线性函数模块}
+非线性函数模块的实现相对复杂一些，其中的 S 盒置换函数和分组密码的设计思想很相似。其中的操作较多，包括比特加、比特异或、模 $2^{32}$ 加、字符串移位以及 S 盒置换。
+
+这一模块中的复杂运算和操作，从根本上改变了源序列在素域 $GF(2^{31}-1)$ 上的线性代数结构，而精心设计的 S 盒则具备很强的非线性性和扩散性。因此这一模块使整个算法的安全性得到了极大地提升。
 
 \begin{lstlisting}[style=myPython,label={lst:nonlinearfunction},caption={非线性函数}]
 def nonLinearFunction():
@@ -180,25 +204,26 @@ def nonLinearFunction():
     r2 = sboxOfZuc(linearTransform(w2[-16:]+w1[0:16], 2))
 \end{lstlisting}
 
-非线性函数模块中有两个重要的函数：\  {\color{red} {\cnsls sboxOfZuc}} 和\ {\color{red} {\cnsls linearTransform}}。
+\vspace*{0.5\baselineskip}
+非线性函数模块中有两个重要的函数：{\cnsls linearTransform} 和 {\cnsls sboxOfZuc}。
 
-
-
-线性变换
+线性变换函数 { \cnsls linearTransform} 主要是将字符串的不同部分进行移位和比特异或。
 
 \begin{lstlisting}[style=myPython,label={lst:lineartransform},caption={线性变换函数}]
+def linearTransform(list_in, typex):
     if typex == 1:
         shift_bits_list = [0, 2, 10, 18, 24]
     else:
         shift_bits_list = [0, 8, 14, 22, 30]
 
     list_out = [0] * len(list_in)
-    for i in range(0,len(shift_bits_list)):
+    for i in range(0, len(shift_bits_list)):
         list_out = binaryXor(list_out, circShiftLeft(list_in, shift_bits_list[i]))
 
     return list_out
 \end{lstlisting}
 
+S 盒置换函数 { \cnsls sboxOfZuc} 主要是提供非线性性，将每个输入的字节映射到另一个截然不同的字节，其核心是两张 S 盒置换表。限于篇幅，这里没有将 S 盒中的所有元素都写出来。
 
 \begin{lstlisting}[style=myPython,label={lst:sboxofzuc},caption={S 盒置换函数}]
 def sboxOfZuc(list_in):
@@ -225,22 +250,13 @@ def sboxOfZuc(list_in):
 \end{lstlisting}
 
 
-比特重组阶段主要是将
-
-
-\begin{lstlisting}[style=myPython,label={lst:bitreorganization},caption={比特重组}]
-def bitReorganization():
-    global x, s
-    x[0] = s[15][0:16] + s[14][-16:]
-    x[1] = s[11][-16:] + s[9][0:16]
-    x[2] = s[7][-16:] + s[5][0:16]
-    x[3] = s[2][-16:] + s[0][0:16]
-\end{lstlisting}
-
-
 \subsection{运行过程}
 
-\begin{lstlisting}[style=myPython,label={lst:varinit},caption={变量初始化}]
+\subsubsection{变量初始化}
+
+变量初始化部分就是给算法中要用到的变量赋初值，其中就包括将初始密钥装入寄存器的操作。
+
+\begin{lstlisting}[style=myPython,label={lst:varsinit},caption={变量初始化}]
 k_hex = [''] * 16
 v_hex = [''] * 16
 k = [''] * 16 # initial key     -  8 bit x 16
@@ -258,7 +274,7 @@ d = [ '100010011010111', '010011010111100', '110001001101011', '001001101011110'
 
 def varsInit():
     global k_hex, k, v_hex, v, d, s, r1, r2
-    k_hex = ['01','23','45','67','89','AB','CD','EF','01','23','45','67','89','AB','CD','EF']
+    k_hex = ['00','00','00','00','00','00','00','00','00','00','00','00','00','00','00','00']
     for i in range(0, 16):
         k[i] = hex2binstr(k_hex[i])
 
@@ -274,7 +290,10 @@ def varsInit():
 
 \end{lstlisting}
 
-算法运行时也有两个阶段，分为初始化阶段和工作阶段。唯一的不同就是，初始化阶段执行的次数是固定的 32 轮，而工作阶段的执行次数取决于要输出多少次密钥
+\subsubsection{算法运行}
+算法运行分为两个阶段，分为初始化阶段和工作阶段。唯一的不同就是，初始化阶段执行的次数是固定的 32 轮，而工作阶段的执行次数取决于要输出多少次密钥。
+
+算法运行过程中，需要不断地执行上一小节中提及的三个模块。
 
 \begin{lstlisting}[style=myPython,label={lst:zuc},caption={算法初始化阶段和工作阶段}]
 def zucInit():
@@ -295,37 +314,37 @@ def zucWork(i=0):
     lfsrWork()
 \end{lstlisting}
 
-密钥输出
+\subsubsection{密钥输出}
+
+这一部分非常简单，其核心就是进入整个算法的工作阶段，然后不断循环，输出密钥。
 
 \begin{lstlisting}[style=myPython,label={lst:outputkey},caption={算法初始化阶段和工作阶段}]
 def outputKey(num=1):
     global k_hex, k, v_hex, v, d, s, r1, r2, x, w
     for i in range(0, num+1):
         zucWork(i)
-
 \end{lstlisting}
 
-因此，运行如下代码，则会输出 3 次密钥。虽然工作阶段实际运行了 4 次，但是算法规定第 0 次输出的密钥要舍弃。
+\subsubsection{运行结果}
+运行如下代码，则会输出 3 次密钥。虽然工作阶段实际运行了 4 次，但是算法规定第 0 次输出的密钥要舍弃。
 
-\begin{lstlisting}[style=myPython,label={lst:run},caption={完整的算法执行}]
-
+\begin{lstlisting}[style=myPython,label={lst:run},caption={完整的算法执行过程}]
 if __name__ == '__main__':
     varsInit()
     zucInit()
     outputKey(4)
-
 \end{lstlisting}
 
-运行结果：
+上述代码中，种子密钥和初始向量都是全 0 序列。
 
-\begin{lstlisting}[style=myPython,label={lst:runresult},caption={运行结果}]
+算法运行产生的输出如下：
+
+\begin{lstlisting}[style=myPython,label={lst:runresult},caption={算法运行的输出结果}]
 Key 01 27bede74
 Key 02 018082da
 Key 03 87d4e5b6
 Key 04 9f18bf66
 \end{lstlisting}
-
-
 
 \section{本章小结}
 
@@ -333,8 +352,8 @@ Key 04 9f18bf66
 
 然后我们讨论了 ZUC 算法的流程和结构，分别介绍了 ZUC 算法的三个部分，包括线性移位反馈寄存器、比特重组和非线性函数，并且讲解了初始化和工作的运行过程。
 
-最后我们展示了 ZUC 算法的软硬件实现情况，给出了硬件电路的原理图，开源了软件代码，并且介绍了硬件部分和软件部分各自的用途。
+接着我们展示了 ZUC 算法的硬件实现情况和所用设备，给出了硬件电路的原理图。
 
-我们讨论了功耗分析中简单功耗分析和差分功耗分析的异同，并且重点介绍了差分功耗攻击的基本流程和一般方法。
+最后我们详细讲解了算法的软件实现，分析了各个模块的操作和作用，这是我们后续对算法进行攻击的基础工作。
 
-最后我们讨论了针对 ZUC 算法的差分功耗分析方案，除了介绍了传统的差分功耗分析的流程，还依据相关资料选取了有效的中间值，并且解释了这样选取的具体原因。
+

@@ -22,12 +22,17 @@
     numberstyle={\tiny \color{black}}, % size of the numbers
     numbersep=9pt, % this defines how far the numbers are from the text
     tabsize=4,                     % sets default tabsize to 4 spaces
-    emph=[1]{nonLinearFunction, bitReorganization, lfsrInit, lfsrWork, circShiftLeft, shiftLeft, modAdd_2e31m1, binaryAdd, binaryXor, hex2binstr, binvec2hex, hex2dec, hex2binvec, outputKey, zucInit, zucWork, sboxOfZuc, linearTransform},
+    emph=[1]{nonLinearFunction, bitReorganization, lfsrInit, lfsrWork, circShiftLeft, shiftLeft, modAdd_2e31m1, binaryAdd, binaryXor, hex2binstr, binvec2hex, hex2dec, hex2binvec, outputKey, varsInit, zucInit, zucWork, sboxOfZuc, linearTransform},
     emphstyle=[1]\color{red}, %some words to emphasise
     %emph=[2]{word1,word2}, 
     % emphstyle=[2]{style}, 
     escapeinside=``,               % Characters escape: To Use Chinese in codes   
 }
 
-
 \newcommand*{\cnsls}{\ttconsolas\selectfont}
+
+\usepackage{array}
+\newcolumntype{L}[1]{>{\raggedright\let\newline\\\arraybackslash\hspace{0pt}}m{#1}}
+\newcolumntype{C}[1]{>{\centering\let\newline\\\arraybackslash\hspace{0pt}}m{#1}}
+\newcolumntype{R}[1]{>{\raggedleft\let\newline\\\arraybackslash\hspace{0pt}}m{#1}}
+
