@@ -14,9 +14,6 @@ from binaryOperation import *
 from zucAlgo import linearTransform, sboxOfZuc, d
 from parseTrace import *
 
-
-
-
 trs_file_name = 'zuc_traces.trs'
 with open(trs_file_name, 'rb') as trs_file:
     trs_info = readHeader(trs_file)

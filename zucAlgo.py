@@ -143,32 +143,29 @@ def bitReorganization():
 
 def zucInit():
     global k_hex, k, v_hex, v, d, s, r1, r2, x, w
-    varsInit()
     for i in range(0,32):
         print('zucInit(): {}'.format(i))
         # print(list(map(binvec2hex, [x[0], x[1], x[2],x[3], r1, r2, binaryXor(x[3],w), s[15]])))
         bitReorganization()
         nonLinearFunction()
         lfsrInit()
-        
-def zucWork():
+
+def zucWork(i=0):
     global k_hex, k, v_hex, v, d, s, r1, r2, x, w
     bitReorganization()
     nonLinearFunction()
+    key_bin = binaryXor(w, x[3])
+    key_hex = binvec2hex(key_bin)
+    if i != 0:
+        print('Key {:>02} {}'.format(i, key_hex.lower()))
     lfsrWork()
 
 def outputKey(num=1):
     global k_hex, k, v_hex, v, d, s, r1, r2, x, w
-    for i in range(0, num):
-        # print(list(map(binvec2hex, [x[0], x[1], x[2],x[3], r1, r2, binaryXor(x[3],w), s[15]])))
-        bitReorganization()
-        nonLinearFunction()
-        key_bin = binaryXor(w, x[3])
-        key_hex = binvec2hex(key_bin)
-        print('Key {:>02} {}'.format(i, key_hex.lower()))
-        lfsrWork()
+    for i in range(0, num+1):
+        zucWork(i)
 
 if __name__ == '__main__':
+    varsInit()
     zucInit()
-    zucWork()
-    outputKey(3)
+    outputKey(4)
