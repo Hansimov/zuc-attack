@@ -5,13 +5,13 @@
 
 \begin{abstract}
 
-密码设备的安全性一直备受研究人员关注，其中侧信道攻击技术扮演了十分重要的角色，而功耗分析攻击又是诸多侧信道攻击方法中极为强大的一种。因此，研究功耗分析技术，不但可以加深我们对密码设备安全性的理解，更能揭示出理论安全的密码算法在实际实现时可能会出现的众多问题，从而指导我们在生产实践中采取必要的防护措施。
+密码设备的安全性一直备受研究人员关注，其中旁路攻击技术扮演了十分重要的角色，而功耗分析攻击又是诸多旁路攻击方法中的主流手段。因此，研究功耗分析技术，不但可以加深我们对密码设备安全性的理解，更能揭示出理论安全的密码算法在实际实现时可能会出现的众多问题，从而指导我们在生产实践中采取必要的防护措施。
 
-在传统的旁路攻击中，分组密码是主要的研究对象，这方面的研究成果也较多。由于序列密码（也称为流密码）算法中的加密变换随时间变化，因此，相比分组密码，找到序列密码中密钥和设备功耗之间的对应关系相对困难，所以针对序列密码算法的功耗分析研究相对较少。
+在传统的旁路攻击中，分组密码是主要的研究对象，这方面的研究成果也较多。由于序列密码（也称为流密码）算法中的加密变换随时间变化，因此，相比分组密码，找到序列密码中密钥和设备功耗之间的对应关系相对困难，这方面的研究成果也相对较少。
 
-本文以祖冲之算法作为序列密码算法的典型，力图将传统的分组密码功耗分析方法应用于序列密码算法，借此表明序列密码算法同样无法抵御功耗分析攻击，并总结出一套系统的模型建立和数据处理的流程和方法。
+本文以祖冲之算法（也称作 ZUC 算法）作为序列密码算法的典型，力图将传统的分组密码功耗分析方法应用于序列密码算法，借此表明序列密码算法同样无法抵御功耗分析攻击，并总结出一套系统的模型建立和数据处理的流程和方法。
 
-本次实验首先在硬件和软件上都实现了 ZUC 算法，然后对 ZUC 算法进行了分析，通过数学推导和严格论证，提出了可行的攻击方案，阐述了方案的具体实施过程，还对一些具体细节进行了深入的剖析和说明，最后将其应用到现实设备中，成功地实现了完整的功耗分析流程。
+本研究首先在硬件和软件上实现了祖冲之算法，然后对祖冲之算法进行了分析，通过数学推导和严格论证，提出了可行的攻击方案，阐述了方案的具体实施过程。本文对一些具体细节进行了深入的剖析和说明，最后将其应用到现实设备的分析中，成功地实现了完整的功耗分析流程。
 
 实验结果显示，通常用于攻击分组密码的差分功耗分析方法也同样适用于祖冲之算法这样的序列密码算法，并且攻击的流程和框架也都基本相同。实验实现了算法的硬件电路和软件代码，成功地攻击出了相关的密钥字节，并且详细分析了算法电路信息泄露的位置，对相关实验结果给出了可能的原因和合理的解释。
 
@@ -25,7 +25,7 @@ In traditional side-channel attacks, block cipher algorithms are the main object
 
 This paper studies the technologies used in traditional power analysis of block cipher algorithms, and applies them to stream cipher algorithms. We take the ZUC algorithm as a typical case. The results indicate that stream cipher algorithms are also vulnerable to power analysis attacks. We will build a general process of modeling and data analysis through the experiments.
 
-This experiment first realizes the ZUC algorithm in both hardware and software, then analyzes the ZUC algorithm. Through mathematical deduction and strict proofs, we put forward a feasible attack scheme. We also implement the complete process of the scheme sucessfully on real-world devices. We clarify some specific details and give many explanations.
+This research first realizes the ZUC algorithm in both hardware and software, then analyzes the ZUC algorithm. Through mathematical deduction and strict proofs, we put forward a feasible attack scheme. We also implement the complete process of the scheme sucessfully on real-world devices. We clarify some specific details and give many explanations.
 
 The experimental results show that the differential power analysis method, which is usually used to attack the block ciphers, also applies to the sequence cipher algorithms such as the ZUC algorithm, and the process and framework of the attack are basically the same. The experiment implements the hardware curcuits and software codes of the algorithm, successfully attacks the related key bytes, and analyzes the location of the information leakage of the algorithm circuit in detail. We also give the possible reasons and reasonable explanations for the related experimental results.
 

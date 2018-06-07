@@ -35,7 +35,7 @@
     \label{fig:dpa}
 \end{figure}
 
-\section{寻找合适的中间值}
+\section{寻找中间值}
 
 在进行软件分析之前，我们首先要在硬件上实现 ZUC 算法电路，并采集其运行时的功耗。这部分相对简单，我们已经在 \ref{sec:hardware} 节中实现了硬件电路，而采集功耗的过程也很容易，因此这里不再赘述。
 
@@ -182,7 +182,7 @@ r2 `$\Leftarrow$` w2[-16:] + w1[0:16]
 
 \newpage
 
-\section{进一步的剖析}
+\section{构建密钥推算链条}
 
 然而，我们在上一节中的方案遗漏了两个细节。
 
@@ -305,36 +305,68 @@ def lfsrInit():
 
 至此，我们就将所有的密钥字节攻击出来了，所需要猜测的情况总数为：$2^8 \times (9+3) + 2^{32}$。
 
-\section{实施相关系数攻击}
+\newpage
 
-在前面两节我们详细讲解了攻击的方案，这里我们为了突出功耗分析的重要思想，选取了一个易于理解的典型，仅以 {\cnsls zucInit} 第 1 轮中 {\cnsls r2} 的输出作为中间值，来攻击 {\cnsls k[5]}。
+\section{计算假设功耗值}
 
-选好了中间值的位置，我们就可以计算出所有密钥猜测（从 0 到 255，也即 16 进制的 00 到 FF）对应的的中间值。
+选好了中间值的位置，我们就可以计算出所有密钥猜测（从 0 到 255，也即 16 进制的 00 到 FF）对应的中间值。
 
-然后我们要选择合适的功耗模型，通过中间值计算出理论功耗值（或者称作假设功耗值）。这一步骤的目的是将中间值映射到一个更小的空间，便于区分不同特征的曲线。我们这里选择汉明重量。
+然后我们要选择合适的功耗模型，通过中间值计算出理论功耗值（或者称作假设功耗值）。这一步骤的目的是将中间值映射到一个更小的空间，便于区分不同特征的曲线。
 
-接着我们实施相关系数攻击，也即计算假设功耗值和实际功耗值之间的相关系数（在本次实验的实际实现中，这个值还需要稍微处理一下，得到更加可靠的相对相关系数）。
+我们这里选择汉明重量作为功耗模型。一个仅由 0 和 1 构成的向量的汉明重量，等于该向量中 1 的个数。
 
-最后我们比较不同密钥猜测的相对相关系数，值最大的即对应最优的密钥猜测。
+因此，给定一个中间值向量，就能得到一个对应的汉明重量，也就是其假设功耗值。
+
+汉明重量模型有效的前提假设是：设备产生的功耗，与其操作的数据中 1 的个数是相关的。
+
+选择汉明重量模型的原因是，计算相对简单，而且其有效性假设在现实中一般都能成立。
+
+\section{计算相对相关系数}
+
+在采集到实际功耗曲线，并通过中间值算出假设功耗值后，我们就可以计算假设功耗值矩阵和实际功耗值矩阵之间的相关系数了。
+
+相关系数表征了假设功耗值和实际功耗值之间的关联程度，相关系数越高，二者之间的关联度就越高。
+
+计算相关系数的公式如下：
+
+\begin{equation*}
+r = \frac{\sum\limits_{i=1}^{n}(X_i-\overline{X})(Y_i-\overline{Y})}{\sqrt{\sum\limits_{i=1}^n(X_i-\overline{X})^2}\sqrt{\sum\limits_{i=1}^n(Y_i-\overline{Y})^2}}
+\end{equation*}
+
+其中，$r$ 表示样本相关系数，$X_i$ 表示假设功耗值的样本点，$Y_i$ 表示实际功耗值的样本点，$n$ 表示样本点数。
 
 \vspace*{0.5\baselineskip}
 
-代码 \ref{lst:whole_attack} 展示了完整的功耗分析流程。
+我们对相关系数矩阵稍作处理，得到“相对相关系数”，目的是为了更好地挖掘有效信息。处理过程如下：
 
-\begin{lstlisting}[style=myPython,label={lst:whole_attack},caption={功耗分析攻击的完整流程}]
-# Reading traces
+先对相关系数矩阵取绝对值，这是因为不论相关系数是正是负，只要绝对值够大，就表明有显著的相关性。再取每一行中最大的前 5 个值，计算平均值，即可得到“相对相关系数”。这是因为实际功耗曲线上只有极少数的时间点有功耗信息的泄露，我们只需要泄露最明显的那一些点，如果让很多不相关的时刻上的相关系数也参与运算，就会降低信噪比，掩盖掉有用的信息。
+
+\vspace*{0.5\baselineskip}
+
+最后我们比较不同密钥猜测的相对相关系数，值最大的即对应最优的密钥猜测。
+
+\section{实现完整的差分功耗分析}
+
+我们在前面详细讲解了攻击的方案，这里我们为了突出功耗分析的重要思想，选取了一个易于理解的典型，仅以 {\cnsls zucInit} 第 1 轮中 {\cnsls r2} 的输出作为中间值，来攻击 {\cnsls k[5]}。
+
+将上面的方案串联起来，就能得到完整的功耗分析流程，代码 \ref{lst:whole_attack} 是这一流程的软件实现。
+
+\newpage
+
+\begin{lstlisting}[style=myPython,label={lst:whole_attack},caption={差分功耗分析攻击的完整流程}]
+# Read traces
     sample_mat = [[]]*trace_num
     for i in range(0, trace_num):
         sample_mat[i] = getTraceSample(trs_file, header_end, i, sample_num, offset)
     hw_mat = [[0]*trace_num for _ in range(256)]
 
-# Calculating inter values and hammingweight
+# Calculate inter values and hammingweight
     for i in range(0, trace_num):
         for k in range(0, 256):
             inter_val = calcInterValue(i, k)
             hw_mat[k][i] = calcHammingWeight(inter_val)
 
-# Calculating relative correlation matrix of guessing key
+# Calculate relative correlation matrix of guessing key
     sample_mat = np.array(sample_mat)
     hw_mat = np.array(hw_mat)
     for n in [100, 200, 500, 1000, 2000, 5000, 10000, 20000]:
@@ -349,7 +381,7 @@ def lfsrInit():
           key_max = corr_avg.index(corr_max)
 \end{lstlisting}
 
-由于篇幅限制，这里只展示了算法中最核心的部分，删去了很多细节。
+由于篇幅限制，这里略去了很多细节，只展示了算法中最核心的部分。
 
 我们将在下一章给出实验的具体结果以及详细分析。
 
@@ -359,8 +391,10 @@ def lfsrInit():
 
 本章首先讨论了功耗分析中简单功耗分析和差分功耗分析的异同，并且重点介绍了差分功耗攻击的基本流程和一般方法。
 
-然后我们试图寻找合适的中间值，对算法进行了深入的挖掘，并且发现了合适的中间值。
+其次我们试图寻找合适的中间值，对算法进行了深入的挖掘，并且发现了合适的中间值。
 
-接着我们对算法进行了进一步的剖析，探讨了遗漏的细节，并且补全了对剩余密钥字节的攻击方案。
+然后我们对算法进行了进一步的剖析，探讨了遗漏的细节，并且补全了对剩余密钥字节的攻击方案。
 
-最后我们选取了一个典型的密钥字节作为攻击对象，展示了将功耗分析技术完整地用于现实场景的过程。
+接着我们选取了合适的功耗模型，并进行相关系数攻击。
+
+最后我们以一个典型的密钥字节作为攻击对象，展示了将功耗分析技术完整地用于现实场景的过程。
