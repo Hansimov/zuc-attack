@@ -375,10 +375,9 @@ r = \frac{\sum\limits_{i=1}^{n}(X_i-\overline{X})(Y_i-\overline{Y})}{\sqrt{\sum\
             for j in range(0, sample_num):
                 corr_mat[k][j] = abs(np.corrcoef(hw_mat[k][0:n], sample_mat[0:n, j])[0][1])
             corr_maxn[k] = heapq.nlargest(len(corr_maxn[0]), corr_mat[k])
-              corr_avg[k] = np.mean(corr_maxn[k])
-  
-          corr_max = max(corr_avg)
-          key_max = corr_avg.index(corr_max)
+            corr_avg[k] = np.mean(corr_maxn[k])
+        corr_max = max(corr_avg)
+        key_max = corr_avg.index(corr_max)
 \end{lstlisting}
 
 由于篇幅限制，这里略去了很多细节，只展示了算法中最核心的部分。
