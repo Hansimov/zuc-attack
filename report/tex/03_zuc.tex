@@ -179,6 +179,8 @@ def lfsrWork():
 
 简单的设计使这一模块便于在软硬件上实现，其作用是改变线性反馈移位寄存器部分的线性结构，并且加强对素域 $GF(2^{31}-1)$ 上密码分析的防御能力。 \cite{zuc_feng}
 
+\newpage
+
 \begin{lstlisting}[style=myPython,label={lst:bitreorganization},caption={比特重组}]
 def bitReorganization():
     global x, s
@@ -192,7 +194,7 @@ def bitReorganization():
 \subsubsection{非线性函数模块}
 非线性函数模块的实现相对复杂一些，其中的 S 盒置换函数和分组密码的设计思想很相似。其中的操作较多，包括比特加、比特异或、模 $2^{32}$ 加、字符串移位以及 S 盒置换。
 
-这一模块中的复杂运算和操作，从根本上改变了源序列在素域 $GF(2^{31}-1)$ 上的线性代数结构，而精心设计的 S 盒则具备很强的非线性性和扩散性。因此这一模块使整个算法的安全性得到了极大地提升。
+这一模块中的复杂运算和操作，从根本上改变了源序列在素域 $GF(2^{31}-1)$ 上的线性代数结构，而精心设计的 S 盒则具备很强的非线性性和扩散性。因此这一模块使整个算法的安全性得到了极大地提升。 \cite{zuc_feng}
 
 \begin{lstlisting}[style=myPython,label={lst:nonlinearfunction},caption={非线性函数}]
 def nonLinearFunction():
@@ -207,6 +209,7 @@ def nonLinearFunction():
 \vspace*{0.5\baselineskip}
 非线性函数模块中有两个重要的函数：{\cnsls linearTransform} 和 {\cnsls sboxOfZuc}。
 
+\vspace*{0.5\baselineskip}
 线性变换函数 { \cnsls linearTransform} 主要是将字符串的不同部分进行移位和比特异或。
 
 \begin{lstlisting}[style=myPython,label={lst:lineartransform},caption={线性变换函数}]
@@ -223,7 +226,10 @@ def linearTransform(list_in, typex):
     return list_out
 \end{lstlisting}
 
+\vspace*{0.5\baselineskip}
 S 盒置换函数 { \cnsls sboxOfZuc} 主要是提供非线性性，将每个输入的字节映射到另一个截然不同的字节，其核心是两张 S 盒置换表。限于篇幅，这里没有将 S 盒中的所有元素都写出来。
+
+\newpage
 
 \begin{lstlisting}[style=myPython,label={lst:sboxofzuc},caption={S 盒置换函数}]
 def sboxOfZuc(list_in):

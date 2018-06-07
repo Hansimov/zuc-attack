@@ -238,7 +238,6 @@ if __name__ == '__main__':
         # plt.plot(sample_mat[i])
         # plt.show()
 
-
         # inter_val_mat = [ [0]*trace_num for _ in range(256)]
 
         hw_mat = [[0]*trace_num for _ in range(256)]
@@ -389,10 +388,10 @@ if __name__ == '__main__':
             ax.plot(sample_row, color='b')
             plt.title('曲线 - {:0>5}'.format(i), y=1.05)
 
-            print('')
-            image_name = './report/images/trace_{}.png'.format(i)
-            print('Outputing {}'.format(image_name))
-            plt.savefig(image_name)
+            # print('')
+            # image_name = './report/images/trace_{}.png'.format(i)
+            # print('Outputing {}'.format(image_name))
+            # plt.savefig(image_name)
 
         t2 = time.time()
         print('Time of processing: {} s'.format(t2-t1))

@@ -1,4 +1,4 @@
-\chapter{对 ZUC 算法的分析方案}
+\chapter{对 ZUC 算法的功耗分析方案}
 \label{chap:attack}
 
 \section{差分功耗分析的一般步骤}
@@ -35,7 +35,7 @@
     \label{fig:dpa}
 \end{figure}
 
-\section{寻找 ZUC 算法的中间值}
+\section{寻找合适的中间值}
 
 在进行软件分析之前，我们首先要在硬件上实现 ZUC 算法电路，并采集其运行时的功耗。这部分相对简单，我们已经在 \ref{sec:hardware} 节中实现了硬件电路，而采集功耗的过程也很容易，因此这里不再赘述。
 
@@ -47,13 +47,18 @@
 
 因此，我们第一步想到的是，把目光放在 ZUC 算法的非线性函数模块，看看能否从这个模块的附近找到合适的中间值。
 
+
+\vspace*{0.5\baselineskip}
+
 由于 ZUC 算法是分成三层的，第三层的非线性函数模块的输入，取决于第一层的线性反馈移位寄存器模块和第二层的比特重组模块的输出，而上面两层都对算法中的变量作了很多操作和运算，比如移位、剪切、粘贴、比特加、比特异或、素域模加，这就导致不同密钥字节彼此间的关联度很高。
 
-密钥字节关联度很高的后果就是，我们很难对单个密钥字节进行猜测（只需要穷举 $2^8$ 种情况），这就导致我们必须穷举更多的情况（N 个密钥字节就对应 $2^{8 \times N}$ 中情况），一旦关联的密钥字节数较多，就几乎不可能对其穷举。
+密钥字节关联度很高的后果就是，我们很难对单个密钥字节进行猜测（只需要穷举 $2^8$ 种情况），这就导致我们必须穷举更多的情况（N 个密钥字节就对应 $2^{8 \times N}$ 种情况），一旦关联的密钥字节数较多，就几乎不可能对其穷举。
 
 所以我们的首要任务，就是找到算法中尽可能独立的密钥字节。换句话说，如果在某个时刻，非线性函数模块的输出只和单个密钥字节相关，那么这个密钥字节就具有极强的独立性，我们也只需要穷举 $2^8$ 种情况就能攻出这个密钥字节。
 
 我们需要对算法进行自顶向下地剖析，观察不同阶段哪些密钥字节参与了什么运算。
+
+\vspace*{0.5\baselineskip}
 
 我们从图 \ref{fig:zuc_algo} 中截取一部分，得到图 \ref{fig:zuc_lfsr_br}，该图展示了线性反馈移位寄存器模块的输出、比特重组模块的全部以及非线性函数模块的输入。
 
@@ -64,7 +69,9 @@
     \label{fig:zuc_lfsr_br}
 \end{figure}
 
-从图中可以看出，并不是任何时刻所有种子密钥字节都参与算法，以初始化阶段为例，每运行一次 {\cnsls zucInit} 函数，线性反馈移位寄存器输出到下一层只同 8 个寄存器字节变量相关。影响线性反馈移位寄存器输出的便是比特重组的输入，见代码 \ref{lst:bitreorganization}，我们这里将其再次写出来，方便参阅：
+\newpage
+
+从图中可以看出，并不是任何时刻所有种子密钥字节都参与运算，以初始化阶段为例，{\cnsls zucInit} 的每一轮中，线性反馈移位寄存器的输出只和 8 个寄存器单元相关。线性反馈移位寄存器输出的便是比特重组的输入，见代码 \ref{lst:bitreorganization}，我们这里将其再次写出来，方便参阅：
 
 \begin{lstlisting}[style=myPython]
 def bitReorganization():
@@ -75,7 +82,7 @@ def bitReorganization():
     x[3] = s[2][-16:] + s[0][0:16]
 \end{lstlisting}
 
-那么这里 {\cnsls s} 又和什么有关呢？在变量初始化的代码 \ref{lst:varsinit} 中，我们可以找到如下语句：
+那么这里的寄存器单元 {\cnsls s[i]} 又和什么有关呢？在变量初始化的代码 \ref{lst:varsinit} 中，我们可以找到如下语句：
 
 \begin{lstlisting}[style=myPython]
 ...
@@ -111,6 +118,10 @@ def varsInit():
 
 那么，在非线性函数模块中，是不是这 4 个又都参与运算了呢？并不是。
 
+\vspace*{0.5\baselineskip}
+
+\newpage
+
 我们再截取图 \ref{fig:zuc_algo} 的另外一部分，得到图 \ref{fig:zuc_br_f}，稍作观察。
 
 \begin{figure}[htbp]
@@ -138,7 +149,9 @@ def nonLinearFunction():
     r2 = sboxOfZuc(linearTransform(w2[-16:]+w1[0:16], 2)) `\label{line:r2}`
 \end{lstlisting}
 
-从第 \ref{line:r1} -- \ref{line:r2} 行可以看出，{\cnsls r1} 和 {\cnsls r1} 的值同 {\cnsls w1} 和 {\cnsls w2} 均相关，而 {\cnsls w1} 同 {\cnsls x[1]} 相关，{\cnsls w2} 同 {\cnsls x[2]} 相关。
+从第 \ref{line:r1} -- \ref{line:r2} 行可以看出，{\cnsls r1} 和 {\cnsls r2} 的值与 {\cnsls w1} 和 {\cnsls w2} 均相关，而 {\cnsls w1} 与 {\cnsls x[1]} 相关，{\cnsls w2} 与 {\cnsls x[2]} 相关。
+
+\newpage
 
 让我们将几个变量做一下拆解，以便更好地理清它们之间的关系：
 
@@ -154,11 +167,24 @@ r2 `$\Leftarrow$` w2[-16:] + w1[0:16]
    `$\Leftarrow$` (k[5][:] + d[5][0:8]) + (d[11][-8:] + v[11][:])
 \end{lstlisting}
 
-我们惊喜地发现：{\cnsls r1} 仅和密钥字节 {\cnsls k[9]} 相关，而 {\cnsls r2} 仅和密钥字节 {\cnsls k[5]} 相关！
+我们惊喜地发现：\textbf{{\cnsls r1} 仅和密钥字节 {\cnsls k[9]} 相关，而 {\cnsls r2} 仅和密钥字节 {\cnsls k[5]} 相关！}
+
+图 \ref{fig:zuc_attack} 展示了这一重要的关系。
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[height=.5\textheight]{../images/zuc_attack.png}
+    \caption{在 {\cnsls zucInit} 第 1 轮中，{\cnsls r1} 仅和密钥字节 {\cnsls k[9]} 相关，而 {\cnsls r2} 仅和密钥字节 {\cnsls k[5]} 相关 \cite{zuc_attack_tangming}}
+    \label{fig:zuc_attack}
+\end{figure}
 
 也就是说，如果将 {\cnsls r1} 或者 {\cnsls r2} 的输出作为中间值的话，我们就只需要猜测单个字节，也就是 $2^8$ 种情况，所花的代价非常小，可行性也非常高。
 
-然而，我们这里遗漏了两个细节。
+\newpage
+
+\section{进一步的剖析}
+
+然而，我们在上一节中的方案遗漏了两个细节。
 
 第一个遗漏的细节是，在非线性函数模块的代码的第 \ref{line:w1} -- \ref{line:w2} 行中，{\cnsls w1} 不仅取决于 {\cnsls x[1]}，还取决于{\cnsls r1}，同样地，{\cnsls w2} 不仅取决于 {\cnsls x[2]}，还取决于{\cnsls r2}。而 {\cnsls r1} 和 {\cnsls r2} 又是和上一轮非线性函数的结果相关的。
 
@@ -181,11 +207,15 @@ def varsInit():
 
 换句话说，在 {\cnsls zucInit} 的第 1 轮中，除了密钥字节，其他的变量值都是已知的。这样，我们就可以计算出中间值，进行功耗分析，攻击出对应密钥字节，再将攻出来的字节代入到算法中，得到下一轮的相关值，这样就可以攻击出后续的密钥字节。
 
+\vspace*{0.5\baselineskip}
+
 然而事实并没有我们想象的这么简单，事实上，以 {\cnsls r1} 和 {\cnsls r2} 作为中间值，只能攻击 {\cnsls zucInit} 的前 5 轮。也就是说，通过这种方法可以攻击出来的密钥字节为：{\cnsls k[9], k[5]; k[10], k[6]; k[11], k[7]; k[12], k[8]; k[13](, k[9])}。（第 5 轮中攻出的 {\cnsls k[9]} 已经在第 1 轮攻出。）
 
-这是为什么呢？并且为什么是这几个密钥字节呢？
+为什么只能攻击前 5 轮呢？又为什么是这几个密钥字节呢？
 
-这也就引出了第二个遗漏的细节：在 {\cnsls zucInit} 的每一轮中，线性反馈移位寄存器的寄存器单元变量都会向右平移一个单元。参见代码 \ref{lst:lfsr} 中的这一段：
+\vspace*{0.5\baselineskip}
+
+这也就引出了第二个遗漏的细节：在 {\cnsls zucInit} 的每一轮中，线性反馈移位寄存器的每个寄存器单元都会向右平移一个单元。参见代码 \ref{lst:lfsr} 中的这一段：
 
 \begin{lstlisting}[style=myPython]
 def lfsrInit():
@@ -199,11 +229,15 @@ def lfsrWork():
     s[i] = s[i+1]
 \end{lstlisting}
 
+\newpage
+
 那么，我们之前所谈论的 {\cnsls k[9]} 和 {\cnsls k[5]} 只是线性反馈移位寄存器中对应位置（第 9 个记忆单元和第 5 个记忆单元）的密钥字节，而不是原始的 {\cnsls k[9]} 和 {\cnsls k[5]}，只有在 {\cnsls zucInit} 的第 1 轮 {\cnsls nonLinearFunction} 中，才是真正的 {\cnsls k[9]} 和 {\cnsls k[5]}。
 
 事实上，在 {\cnsls zucInit} 的第 N 轮 {\cnsls nonLinearFunction} 中，和 {\cnsls r1} 相关的应当是原始密钥字节中的 {\cnsls k[8+N]}，和  {\cnsls r2} 相关的应当是原始密钥字节中的 {\cnsls k[4+N]}。这也就是我们之前所列的，前 5 轮中可以攻出来的密钥字节的递推公式。
 
-这里我们就碰到了关键的问题，到第 6 轮时，第 1 轮中的 {\cnsls s[16]} 已经移动到了这里的 {\cnsls s[11]} 处。此时，如果想得到 {\cnsls r1} 的值，就必须知道 {\cnsls x[1]} 的值，而 {\cnsls x[1]} 的值是取决于 {\cnsls s[11]} 的，见代码 \ref{lst:bitreorganization} 的这一段：
+这里我们就碰到了关键的问题，到第 6 轮时，第 1 轮中的 {\cnsls s[16]$_1$} 已经移动到了这里的 {\cnsls s[11]$_6$} 处。（为了便于之后区分初始化阶段不同轮中线性反馈移位寄存器的单元变量，我们用 {\color{blue} {\cnsls s[i]$_n$}} 表示 {\color{blue} 第 {\cnsls n} 轮中线性反馈移位寄存器第 {\cnsls i} 个记忆单元变量的值}，事实上，{\cnsls s[16]$_j$} = {\cnsls s[11]$_{j+5}$}。）
+
+此时，如果想得到 {\cnsls r1} 的值，就必须知道 {\cnsls x[1]} 的值，而 {\cnsls x[1]} 的值是取决于 {\cnsls s[11]$_1$} 的，见代码 \ref{lst:bitreorganization} 的这一段：
 
 \begin{lstlisting}[style=myPython]
 def bitReorganization():
@@ -212,13 +246,15 @@ def bitReorganization():
     ...
 \end{lstlisting}
 
-问题的根源就在于此：第 6 轮中的 {\cnsls s[11]} 对应的是第 1 轮的 {\cnsls s[16]}，而 {\cnsls s[16]} 的计算过程牵扯到几个其他密钥字节，参见代码 \ref{lst:lfsr} 的这一段：
+\vspace*{0.5\baselineskip}
+
+问题的根源就在于此：第 6 轮中的 {\cnsls s[11]$_6$} 对应的是第 1 轮的 {\cnsls s[16]$_1$}，而 {\cnsls s[16]$_1$} 的计算过程牵扯到几个其他密钥字节，参见代码 \ref{lst:lfsr} 的这一段：
 
 \begin{lstlisting}[style=myPython]
 def lfsrInit():
     global k_hex, k, v_hex, v, d, s, w
-    shift_bits_list  = [15, 17, 21, 20, 8, 0]
-    shift_index_list = [15, 13, 10, 4, 0, 0]
+    shift_bits_list  = [15, 17, 21, 20, 8, 0] `\label{line:shiftbits}`
+    shift_index_list = [15, 13, 10, 4, 0, 0] `\label{line:shiftindex}`
     xv = [0] * 31
     for i in range(0, len(shift_bits_list)):
         s_i_shifted = circShiftLeft(s[shift_index_list[i]], shift_bits_list[i])
@@ -231,57 +267,100 @@ def lfsrInit():
 
 因此，从 {\cnsls zucInit} 的第 6 轮开始，就不能再简单地用 {\cnsls r1} 和 {\cnsls r2} 作为中间值了。因为相关的密钥字节不再只有单个，而是多个，所需要猜测的可能大大增加。
 
-事实上，在 {\cnsls zucInit} 的第 6 轮中，需要穷举 4 个密钥字节： {\cnsls k[15], k[14], k[4], k[0]}。
+事实上，在 {\cnsls zucInit} 的第 6 轮中，需要同时穷举 4 个密钥字节： {\cnsls k[15], k[14], k[4], k[0]}。也就是说，需要猜测 $2^{32}$ 种情况。
 
+\newpage
 
+我们解释一下为什么第 6 轮需要同时穷举这 4 个密钥字节。我们在上文指出，{\cnsls zucInit} 第 6 轮中要用到的 {\cnsls s[11]$_6$} 对应的第 1 轮中的 {\cnsls s[16]$_1$}，而第 1 轮中的 {\cnsls s[16]$_2$} 和 {\cnsls k[15], k[13], k[10], k[4], k[0]} 相关。可以参考上面线性反馈移位寄存器初始化模式代码的第 \ref{line:shiftindex} 行：
 
-作为演示，我们这里就将 {\cnsls r2} 作为中间值，来攻击 {\cnsls k[5]}
+\begin{lstlisting}[style=myPython]
+def lfsrInit():
+    ...
+    shift_bits_list  = [15, 17, 21, 20, 8, 0]
+    shift_index_list = [15, 13, 10, 4, 0, 0]
+    ...
+\end{lstlisting}
 
+{\cnsls shift\_index\_list} 列出了需要移位的字节，{\cnsls shift\_bits\_list} 列出了对应位置的字节需要移多少位，并且相关的字节在移位后还要参与后续的素域模 $2^{31}-1$ 加运算，因此无法单独攻出各个密钥字节，必须同时穷举所有的未知字节。
 
+在第 1 轮中，这里的移位的 {\cnsls s[i]$_1$} 和 {\cnsls k[i]} 相关。事实上，在第 N 轮中，发生移位的 {\cnsls s[i]$_N$} 和 {\cnsls k[i+N-1]} 相关。
 
+因此，从 {\cnsls shift\_index\_list} 就能够得知和第 1 轮中 {\cnsls s[16]$_1$} 相关的密钥字节是：{\cnsls k[15], k[13], k[10], k[4], k[0]}。不过由于 {\cnsls k[10]} 可以在第 2 轮中攻出，{\cnsls k[13]} 可以在第 5 轮中攻出，因此实际上未知的只有 {\cnsls k[15], k[4], k[0]}。
 
+又由于第 6 轮中，和 {\cnsls r1} 相关的密钥字节是 {\cnsls k[14]}（未知），和 {\cnsls r2} 相关的密钥字节是 {\cnsls k[10]}（已攻出），故需要猜测的密钥字节还要再加上 {\cnsls k[14]}。
 
-
-
-
+因此，第 6 轮中需要同时对 {\cnsls k[15], k[14], k[4], k[0]} 这 4 个密钥字节进行穷举，共计 $2^{32}$ 种情况。
 
 \vspace*{0.5\baselineskip}
 
-图 \ref{fig:zuc_attack} 展示了 ZUC 算法中可以利用的漏洞。在 ZUC 算法初始化阶段的第一轮打乱操作中，非线性函数中左侧寄存器的输出仅和 k9 这个密钥字节相关，右侧寄存器的输出仅和 k5 这个密钥字节相关。 \cite{zuc_attack_tangming}
+此时，截至第 6 轮结束，我们可以攻出的字节有：{\cnsls k[9], k[5]; k[10], k[6]; k[11], k[7]; k[12], k[8]; k[13]; k[15], k[14], k[4], k[0]}。剩下的未知的密钥字节只有：{\cnsls k[1], k[2], k[3]}。
 
-\begin{figure}[htbp]
-    \centering
-    \includegraphics[height=.5\textheight]{../images/zuc_attack.png}
-    \caption{非线性函数中左侧寄存器的输出仅和 k9 相关，右侧寄存器的输出仅和 k5 相关\cite{zuc_attack_tangming}}
-    \label{fig:zuc_attack}
-\end{figure}
+\vspace*{0.5\baselineskip}
 
-我们来详细地讨论一下，是怎样得到这个中间值的
+类似第 6 轮中的思路，在第 7 轮中的 {\cnsls s[11]$_7$} 对应第 2 轮输出的 {\cnsls s[16]$_2$}。我们在上文提过，在第 N 轮中，发生移位的 {\cnsls s[i]$_N$} 和 {\cnsls k[i+N-1]} 相关，因此 {\cnsls s[16]$_2$} 又依据 {\cnsls shift\_index\_list}，可以得知和 {\cnsls s[16]$_2$} 相关的密钥字节为 {\cnsls k[14], k[11], k[5], k[1]}，这里仅有 {\cnsls k[1]} 未知。又第 7 轮中的 {\cnsls r1} 和密钥字节 {\cnsls k[11]} 相关，{\cnsls r2} 和密钥字节 {\cnsls k[15]} 相关，而 {\cnsls k[11]} 和 {\cnsls k[11]} 都是已知的。因此只需要猜测 {\cnsls k[1]}，也就是穷举 $2^8$ 种情况。
 
+仿照上面的流程，我们可以在第 8 轮中攻出 {\cnsls k[2]}，在第 9 轮中攻出 {\cnsls k[3]}。
 
+\vspace*{0.5\baselineskip}
 
-因此，选择初始化阶段第一轮打乱操作中，非线性函数右半部分的输出作为我们的中间值，尝试攻击出 k5 的值。
+至此，我们就将所有的密钥字节攻击出来了，所需要猜测的情况总数为：$2^8 \times (9+3) + 2^{32}$。
 
-选择这个位置作为中间值有两个原因：
+\section{实施相关系数攻击}
 
-\begin{enumerate}
-    \item \textbf{这个位置仅仅和单个密钥字节（k5）相关，和其他的密钥字节没有任何关系。}这意味着我们只需要猜测 $2^8=256$ 中情况，大大减少了工作量。如果选择某个其他的中间值，很可能和多个密钥字节有关联，我们假设关联的密钥字节数为 N，那么我们就需要猜测 $2^{8 \times N}$ 中情况。可以想象，如果关联的密钥字节很多的话，我们需要猜测的可能情况就会爆炸式增长，由于我们只拥有有限的计算资源，因此这是不能接受的。
-    \item \textbf{这个位置是非线性变换（S 盒置换）的输出，因而正确猜测和错误猜测之间的差异较为明显。}这一点我们在上面已经提及，因此不再赘述。
-\end{enumerate}
+在前面两节我们详细讲解了攻击的方案，这里我们为了突出功耗分析的重要思想，选取了一个易于理解的典型，仅以 {\cnsls zucInit} 第 1 轮中 {\cnsls r2} 的输出作为中间值，来攻击 {\cnsls k[5]}。
 
-\vspace*{\baselineskip}
+选好了中间值的位置，我们就可以计算出所有密钥猜测（从 0 到 255，也即 16 进制的 00 到 FF）对应的的中间值。
 
-选择好了中间值，我们就可以通过编程计算出所有密钥猜测（从 0 到 255，也即 16 进制的 00 到 FF）对应的的中间值。
+然后我们要选择合适的功耗模型，通过中间值计算出理论功耗值（或者称作假设功耗值）。这一步骤的目的是将中间值映射到一个更小的空间，便于区分不同特征的曲线。我们这里选择汉明重量。
 
-有了中间值之后，我们就可以根据汉明重量模型，计算出理论功耗值（也就是假设功耗值）。然后我们实施相关系数攻击，也即计算假设功耗值和实际功耗值之间的相关系数（在本次实验中，这个值还需要稍微处理一下，得到更加可靠的相对相关系数），然后分析相对相关系数，值最大的即对应最优的密钥猜测。
+接着我们实施相关系数攻击，也即计算假设功耗值和实际功耗值之间的相关系数（在本次实验的实际实现中，这个值还需要稍微处理一下，得到更加可靠的相对相关系数）。
 
-这就是对 ZUC 算法进行功耗分析攻击的大致流程，我们将在下一小节展示相关的实验结果，并补充一些实现细节。
+最后我们比较不同密钥猜测的相对相关系数，值最大的即对应最优的密钥猜测。
+
+\vspace*{0.5\baselineskip}
+
+代码 \ref{lst:whole_attack} 展示了完整的功耗分析流程。
+
+\begin{lstlisting}[style=myPython,label={lst:whole_attack},caption={功耗分析攻击的完整流程}]
+# Reading traces
+    sample_mat = [[]]*trace_num
+    for i in range(0, trace_num):
+        sample_mat[i] = getTraceSample(trs_file, header_end, i, sample_num, offset)
+    hw_mat = [[0]*trace_num for _ in range(256)]
+
+# Calculating inter values and hammingweight
+    for i in range(0, trace_num):
+        for k in range(0, 256):
+            inter_val = calcInterValue(i, k)
+            hw_mat[k][i] = calcHammingWeight(inter_val)
+
+# Calculating relative correlation matrix of guessing key
+    sample_mat = np.array(sample_mat)
+    hw_mat = np.array(hw_mat)
+    for n in [100, 200, 500, 1000, 2000, 5000, 10000, 20000]:
+        corr_maxn = [[0]*5 for _ in range(256)]
+        for k in range(0,256):
+            for j in range(0, sample_num):
+                corr_mat[k][j] = abs(np.corrcoef(hw_mat[k][0:n], sample_mat[0:n, j])[0][1])
+            corr_maxn[k] = heapq.nlargest(len(corr_maxn[0]), corr_mat[k])
+              corr_avg[k] = np.mean(corr_maxn[k])
+  
+          corr_max = max(corr_avg)
+          key_max = corr_avg.index(corr_max)
+\end{lstlisting}
+
+由于篇幅限制，这里只展示了算法中最核心的部分，删去了很多细节。
+
+我们将在下一章详细分析实验的结果以及分析。
+
 
 \section{本章小结}
 
 
+本章首先讨论了功耗分析中简单功耗分析和差分功耗分析的异同，并且重点介绍了差分功耗攻击的基本流程和一般方法。
 
+然后我们试图寻找合适的中间值，对算法进行了深入的剖析，并且发现了合适的中间值。
 
-我们讨论了功耗分析中简单功耗分析和差分功耗分析的异同，并且重点介绍了差分功耗攻击的基本流程和一般方法。
+接着我们针对两个遗漏的细节又展开了讨论，并且补全了对剩余密钥字节的攻击方案。
 
-最后我们讨论了针对 ZUC 算法的差分功耗分析方案，除了介绍了传统的差分功耗分析的流程，还依据相关资料选取了有效的中间值，并且解释了这样选取的具体原因。
+最后我们选取了一个典型的密钥字节作为攻击对象，展示了将功耗分析技术完整地用于现实场景的过程。
