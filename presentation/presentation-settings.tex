@@ -1,0 +1,76 @@
+%% Themes
+%\usetheme{Madrid}
+\usetheme{Berkeley}
+%\usetheme{PaloAlto}
+%\usetheme[left]{Marburg}
+%\useoutertheme[left,height=0pt,width=0.12\paperwidth]{sidebar}
+%\setbeamertemplate{sidebar canvas left}[vertical shading][top=black,bottom=blue]
+
+%\usecolortheme[named=blue]{structure}
+
+%% Beamer settings
+\beamertemplatenavigationsymbolsempty  % Remove the navigation bar
+
+%% Chinese environment
+\usepackage[UTF8]{ctex}
+%\usepackage{fontspec}
+%\usepackage{xeCJK}
+%\setCJKmainfont{SimSun}
+
+%% Graphics
+\usepackage{graphicx}
+\usepackage{booktabs}   % Allows the use of \toprule, \midrule and \bottomrule in tables
+
+\usepackage{caption} % Allow no-number caption of figures
+
+%\usepackage[dvipsnames]{xcolor}
+%\usepackage[sharp]{easylist} % Use # as \item
+
+\setbeamertemplate{caption}[numbered]  % Add figure number
+
+\title[]{序列密码算法电路的新型物理攻防技术研究}
+% The short title appears at the bottom of every slide, the full title is only on the title page
+\author[]{\texorpdfstring{导师：郭\quad 筝 \\ 学生：于泽汉}{}}
+\institute[] % Your institution as it will appear on the bottom of every slide, may be shorthand to save space
+{
+    上海交通大学\quad 微纳电子学系 \\ % Your institution for the title page
+}
+\date{2018.01.11}
+
+
+%% Show outline of current section before presenting details
+\AtBeginSection[] % Do nothing for \section*
+{
+    \begin{frame}<beamer>
+    \frametitle{}
+    \tableofcontents[currentsection]
+    \end{frame}
+}
+%\AtBeginSubsection[]
+%{
+%   \begin{frame}<beamer>
+%   \frametitle{}
+%   \tableofcontents[currentsection,currentsubsection]
+%   \end{frame}
+%}
+
+% \setbeamerfont{normal text}{size=\fontsize{10}{4}} %, series=\bfseries}
+\setbeamerfont{normal text}{size=\footnotesize} %, series=\bfseries}
+
+\setbeamerfont{section in sidebar}{size=\fontsize{5}{4}\selectfont}
+% \setbeamerfont{subsection in sidebar}{size=\fontsize{2}{4}\selectfont}
+% \setbeamerfont{subsubsection in sidebar}{size=\fontsize{2}{4}\selectfont}
+
+\setbeamerfont{itemize/enumerate body}{}
+\setbeamerfont{itemize/enumerate subbody}{size=\scriptsize}
+\setbeamerfont{itemize/enumerate subsubbody}{size=\tiny}
+
+\setbeamerfont{caption}{size=\tiny}
+% \setbeamerfont{caption name}{size=\tiny}
+
+\AtBeginDocument{\usebeamerfont{normal text}}
+
+\makeatletter
+\beamer@headheight=2.5\baselineskip
+\makeatother
+
