@@ -1,7 +1,7 @@
 %% Themes
-%\usetheme{Madrid}
-\usetheme{Berkeley}
-%\usetheme{PaloAlto}
+% \usetheme{Madrid}
+% \usetheme{Berkeley}
+% \usetheme{PaloAlto}
 %\usetheme[left]{Marburg}
 %\useoutertheme[left,height=0pt,width=0.12\paperwidth]{sidebar}
 %\setbeamertemplate{sidebar canvas left}[vertical shading][top=black,bottom=blue]
@@ -22,6 +22,7 @@
 \usepackage{booktabs}   % Allows the use of \toprule, \midrule and \bottomrule in tables
 
 \usepackage{caption} % Allow no-number caption of figures
+\usepackage{subcaption}
 
 %\usepackage[dvipsnames]{xcolor}
 %\usepackage[sharp]{easylist} % Use # as \item
@@ -70,7 +71,9 @@
 
 \AtBeginDocument{\usebeamerfont{normal text}}
 
-\makeatletter
-\beamer@headheight=2.5\baselineskip
-\makeatother
+% Modify the height of header (Only useful in Berkeley)
+% \makeatletter
+% \beamer@headheight=2.5\baselineskip
+% \makeatother
 
+% \titlegraphic{\includegraphics[width=\textwidth]{./media/logo_white.png}}

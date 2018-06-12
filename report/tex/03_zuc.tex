@@ -324,7 +324,7 @@ def zucWork(i=0):
 
 这一部分非常简单，其核心就是进入整个算法的工作阶段，然后不断循环，输出密钥。
 
-\begin{lstlisting}[style=myPython,label={lst:outputkey},caption={算法初始化阶段和工作阶段}]
+\begin{lstlisting}[style=myPython,label={lst:outputkey},caption={密钥输出}]
 def outputKey(num=1):
     global k_hex, k, v_hex, v, d, s, r1, r2, x, w
     for i in range(0, num+1):
@@ -334,7 +334,7 @@ def outputKey(num=1):
 \subsubsection{运行结果}
 运行如下代码，则会输出 3 次密钥。虽然工作阶段实际运行了 4 次，但是算法规定第 0 次输出的密钥要舍弃。
 
-\begin{lstlisting}[style=myPython,label={lst:run},caption={完整的算法执行过程}]
+\begin{lstlisting}[style=myPython,label={lst:run},caption={主函数}]
 if __name__ == '__main__':
     varsInit()
     zucInit()
